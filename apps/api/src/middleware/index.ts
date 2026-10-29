@@ -1,6 +1,10 @@
 import { createMiddleware } from 'hono/factory'
 import { auth } from '../utils/auth'
 import { env } from '../utils/env'
+import { createRemoteJWKSet, jwtVerify } from 'jose'
+
+// Create JWKS client for Neon Auth token verification
+const jwks = createRemoteJWKSet(new URL(`${env.NEON_AUTH_JWKS_URL}`))
 
 // Custom auth middleware that extracts session from cookie/header
 export const authMiddleware = createMiddleware(async (c, next) => {
@@ -10,11 +14,26 @@ export const authMiddleware = createMiddleware(async (c, next) => {
   let session = null
   let user = null
   
+  // Try JWT token verification first (for Neon Auth tokens)
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
-    const result = await auth.api.getSession({ headers: { authorization: `Bearer ${token}` } })
-    session = result?.session
-    user = result?.user
+    
+    // Try JWT verification first (for Neon Auth tokens)
+    try {
+      const { payload } = await jwtVerify(token, jwks)
+      if (payload.sub) {
+        // Token is valid, fetch user from database
+        // For now, we'll use better-auth's session API as fallback
+        const result = await auth.api.getSession({ headers: { authorization: `Bearer ${token}` } })
+        session = result?.session
+        user = result?.user
+      }
+    } catch {
+      // JWT verification failed, try better-auth session API
+      const result = await auth.api.getSession({ headers: { authorization: `Bearer ${token}` } })
+      session = result?.session
+      user = result?.user
+    }
   } else if (cookieHeader) {
     const result = await auth.api.getSession({ headers: { cookie: cookieHeader } })
     session = result?.session
@@ -43,9 +62,18 @@ export const optionalAuthMiddleware = createMiddleware(async (c, next) => {
     
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7)
-      const result = await auth.api.getSession({ headers: { authorization: `Bearer ${token}` } })
-      session = result?.session
-      user = result?.user
+      try {
+        const { payload } = await jwtVerify(token, jwks)
+        if (payload.sub) {
+          const result = await auth.api.getSession({ headers: { authorization: `Bearer ${token}` } })
+          session = result?.session
+          user = result?.user
+        }
+      } catch {
+        const result = await auth.api.getSession({ headers: { authorization: `Bearer ${token}` } })
+        session = result?.session
+        user = result?.user
+      }
     } else if (cookieHeader) {
       const result = await auth.api.getSession({ headers: { cookie: cookieHeader } })
       session = result?.session

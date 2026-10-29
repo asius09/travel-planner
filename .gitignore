@@ -46,3 +46,4 @@ ios
 *.tgz
 .cache
 .turbo
+.neon

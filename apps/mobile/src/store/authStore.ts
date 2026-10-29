@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { EXPO_PUBLIC_API_URL } from '@env'
+import { createAuthClient } from '@neondatabase/auth/client'
+import { EXPO_PUBLIC_API_URL, EXPO_PUBLIC_NEON_AUTH_BASE_URL } from '@env'
 
 interface User {
   id: string
@@ -30,24 +31,12 @@ interface AuthState {
 }
 
 const API_URL = EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
+const NEON_AUTH_BASE_URL = EXPO_PUBLIC_NEON_AUTH_BASE_URL ?? 'https://api.example.com'
 
-async function fetchAuth(endpoint: string, body: any, method: 'POST' = 'POST') {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-  
-  const data = await response.json()
-  
-  if (!response.ok) {
-    throw new Error(data.error ?? 'Authentication failed')
-  }
-  
-  return data
-}
+// Create Neon Auth client
+const neonAuth = createAuthClient({
+  baseURL: NEON_AUTH_BASE_URL,
+})
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -60,14 +49,42 @@ export const useAuthStore = create<AuthState>()(
       signUp: async (email: string, password: string) => {
         set({ loading: true, error: null })
         try {
-          const data = await fetchAuth('/auth/signup', { email, password })
-          
-          set({
-            user: data.user,
-            session: data.session,
-            loading: false,
+          // Use Neon Auth client for sign up
+          const result = await neonAuth.signUp.email({
+            email,
+            password,
           })
-          return true
+          
+          if (result.error) {
+            throw new Error(result.error.message)
+          }
+          
+          // Get session after sign up
+          const sessionResult = await neonAuth.getSession()
+          
+          if (sessionResult.data?.session) {
+            const session = sessionResult.data.session
+            const user = sessionResult.data.user
+            
+            set({
+              user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                emailVerified: user.emailVerified,
+                createdAt: user.createdAt,
+              },
+              session: {
+                id: session.id,
+                token: session.token,
+                expiresAt: session.expiresAt,
+              },
+              loading: false,
+            })
+            return true
+          }
+          
+          throw new Error('Failed to get session after sign up')
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Sign up failed'
           set({ loading: false, error: message })
@@ -78,14 +95,42 @@ export const useAuthStore = create<AuthState>()(
       signIn: async (email: string, password: string) => {
         set({ loading: true, error: null })
         try {
-          const data = await fetchAuth('/auth/signin', { email, password })
-          
-          set({
-            user: data.user,
-            session: data.session,
-            loading: false,
+          // Use Neon Auth client for sign in
+          const result = await neonAuth.signIn.email({
+            email,
+            password,
           })
-          return true
+          
+          if (result.error) {
+            throw new Error(result.error.message)
+          }
+          
+          // Get session after sign in
+          const sessionResult = await neonAuth.getSession()
+          
+          if (sessionResult.data?.session) {
+            const session = sessionResult.data.session
+            const user = sessionResult.data.user
+            
+            set({
+              user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                emailVerified: user.emailVerified,
+                createdAt: user.createdAt,
+              },
+              session: {
+                id: session.id,
+                token: session.token,
+                expiresAt: session.expiresAt,
+              },
+              loading: false,
+            })
+            return true
+          }
+          
+          throw new Error('Failed to get session after sign in')
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Sign in failed'
           set({ loading: false, error: message })
@@ -94,29 +139,42 @@ export const useAuthStore = create<AuthState>()(
       },
       
       signOut: async () => {
-        const { session } = get()
-        if (session) {
-          try {
-            await fetch(`${API_URL}/auth/signout`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.token}`,
-              },
-            })
-          } catch (error) {
-            console.error('Signout error:', error)
-          }
+        try {
+          await neonAuth.signOut()
+        } catch (error) {
+          console.error('Signout error:', error)
         }
         set({ user: null, session: null })
       },
       
       restoreSession: async () => {
-        // In a real app, this would validate the stored session with the server
-        // For now, we just check if we have stored session data
-        const { session } = get()
-        if (session) {
-          // Could validate with /auth/session endpoint
-          // For MVP, we'll trust the stored session
+        try {
+          const sessionResult = await neonAuth.getSession()
+          
+          if (sessionResult.data?.session) {
+            const session = sessionResult.data.session
+            const user = sessionResult.data.user
+            
+            set({
+              user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                emailVerified: user.emailVerified,
+                createdAt: user.createdAt,
+              },
+              session: {
+                id: session.id,
+                token: session.token,
+                expiresAt: session.expiresAt,
+              },
+            })
+          } else {
+            set({ user: null, session: null })
+          }
+        } catch (error) {
+          console.error('Restore session error:', error)
+          set({ user: null, session: null })
         }
       },
       

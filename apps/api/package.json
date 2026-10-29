@@ -21,9 +21,11 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.2.0",
+    "@neondatabase/auth": "0.7.0-beta",
     "better-auth": "^1.0.0",
     "drizzle-orm": "^0.30.0",
     "hono": "^4.4.0",
+    "jose": "^6.2.13",
     "pg": "^8.12.0",
     "zod": "^3.23.0"
   },
