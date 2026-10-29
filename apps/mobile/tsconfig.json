@@ -1,0 +1,48 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@travel-planner/shared": ["../../packages/shared/src/index.ts"],
+      "@travel-planner/shared/*": ["../../packages/shared/src/*"],
+      "@travel-planner/config/*": ["../../packages/config/src/*"]
+    },
+    "types": [
+      "jest",
+      "@testing-library/react-native",
+      "vitest/globals",
+      "styled-components",
+      "react-native"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "app/**/*",
+    ".expo/types/**/*.ts",
+    "vitest.config.ts",
+    "vitest.config.mobile.ts",
+    "tailwind.config.ts",
+    "src/types/**/*.d.ts",
+    "src/global.d.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".expo"
+  ]
+}

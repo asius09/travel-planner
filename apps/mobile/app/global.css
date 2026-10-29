@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-canvas: #F7F6F0;
+    --color-surface: #FFFFFF;
+    --color-text: #202822;
+    --color-muted: #777F78;
+    --color-border: #E5E7DF;
+    --color-primary: #263F35;
+    --color-accent: #D7E58A;
+    --color-soft: #E8EBDD;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
