@@ -3,7 +3,6 @@
 import { View, Text, StyleSheet } from 'react-native'
 import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
-import { Button } from './Button'
 
 interface EmptyStateProps {
   icon?: string
@@ -11,7 +10,6 @@ interface EmptyStateProps {
   description: string
   actionLabel?: string
   onAction?: () => void
-  style?: any
 }
 
 const Container = styled(View)`
@@ -20,7 +18,6 @@ const Container = styled(View)`
   justify-content: center;
   padding: 32px;
   gap: 16px;
-  ${({ style }) => style}
 `
 
 const IconWrapper = styled(View)`
@@ -58,21 +55,26 @@ export function EmptyState({
   title, 
   description, 
   actionLabel, 
-  onAction, 
-  style 
+  onAction 
 }: EmptyStateProps) {
   return (
-    <Container style={style}>
+    <Container>
       <IconWrapper>
         <Icon name={icon} />
       </IconWrapper>
       <TitleText>{title}</TitleText>
       <DescriptionText>{description}</DescriptionText>
       {actionLabel && onAction && (
-        <Button variant="primary" onPress={onAction} size="md">
-          {actionLabel}
-        </Button>
+        <Text style={styles.actionText}>{actionLabel}</Text>
       )}
     </Container>
   )
 }
+
+const styles = StyleSheet.create({
+  actionText: {
+    fontFamily: 'Geist_Medium',
+    fontSize: 15,
+    color: '#263F35',
+  },
+})

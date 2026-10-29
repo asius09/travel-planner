@@ -65,8 +65,8 @@ export default function TravelPartyOnboardingScreen() {
   const router = useRouter()
   const { data, setTravelParty, completeOnboarding } = useOnboardingStore()
   
-  const handleSelectParty = (party: string) => {
-    setTravelParty(party as any)
+  const handleSelectParty = (party: import('@travel-planner/shared').TravelParty) => {
+    setTravelParty(party)
   }
   
   const handleContinue = () => {

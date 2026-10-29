@@ -1,15 +1,16 @@
 'use client'
 
 import { TextInput, View, Text, StyleSheet } from 'react-native'
-import { forwardRef } from 'react'
 import styled from 'styled-components/native'
 
-interface InputProps extends React.ComponentPropsWithoutRef<typeof TextInput> {
+interface InputProps {
   label?: string
   error?: string
   helperText?: string
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
+  style?: any
+  [key: string]: any
 }
 
 const InputContainer = styled(View)`
@@ -49,38 +50,39 @@ const HelperText = styled(Text)`
   color: ${({ theme, $hasError }) => $hasError ? '#E57373' : theme.colors.muted};
 `
 
-const Input = forwardRef<TextInput, InputProps>(
-  ({ label, error, helperText, leftIcon, rightIcon, style, ...props }, ref) => {
-    const hasError = !!error
-    
-    return (
-      <InputContainer style={style}>
-        {label && <Label>{label}</Label>}
-        <InputWrapper $hasError={hasError}>
-          {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
-          <StyledInput
-            ref={ref}
-            $hasError={hasError}
-            {...props}
-            style={[
-              styles.input,
-              leftIcon && styles.inputWithLeftIcon,
-              rightIcon && styles.inputWithRightIcon,
-              props.style,
-            ]}
-          />
-          {rightIcon && <View style={styles.iconContainer}>{rightIcon}</View>}
-        </InputWrapper>
-        {error && <HelperText $hasError={true}>{error}</HelperText>}
-        {!error && helperText && <HelperText>{helperText}</HelperText>}
-      </InputContainer>
-    )
-  }
-)
-
-Input.displayName = 'Input'
-
-export { Input }
+export function Input({ 
+  label, 
+  error, 
+  helperText, 
+  leftIcon, 
+  rightIcon, 
+  style,
+  ...props 
+}: InputProps) {
+  const hasError = !!error
+  
+  return (
+    <InputContainer style={style}>
+      {label && <Label>{label}</Label>}
+      <InputWrapper $hasError={hasError}>
+        {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
+        <StyledInput
+          $hasError={hasError}
+          {...props}
+          style={[
+            styles.input,
+            leftIcon && styles.inputWithLeftIcon,
+            rightIcon && styles.inputWithRightIcon,
+            props.style,
+          ]}
+        />
+        {rightIcon && <View style={styles.iconContainer}>{rightIcon}</View>}
+      </InputWrapper>
+      {error && <HelperText $hasError={true}>{error}</HelperText>}
+      {!error && helperText && <HelperText>{helperText}</HelperText>}
+    </InputContainer>
+  )
+}
 
 const styles = StyleSheet.create({
   iconContainer: {

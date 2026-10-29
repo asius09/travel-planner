@@ -67,9 +67,9 @@ export default function MoodOnboardingScreen() {
   const { data, setMood, completeOnboarding } = useOnboardingStore()
   const { setTheme } = useThemeStore()
   
-  const handleSelectMood = (mood: string) => {
-    setMood(mood as any)
-    setTheme(mood as any)
+  const handleSelectMood = (mood: import('@travel-planner/shared').TravelMood) => {
+    setMood(mood)
+    setTheme(mood)
   }
   
   const handleContinue = () => {

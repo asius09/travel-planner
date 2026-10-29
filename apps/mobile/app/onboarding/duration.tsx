@@ -65,8 +65,8 @@ export default function DurationOnboardingScreen() {
   const router = useRouter()
   const { data, setDuration } = useOnboardingStore()
   
-  const handleSelectDuration = (duration: string) => {
-    setDuration(duration as any)
+  const handleSelectDuration = (duration: import('@travel-planner/shared').Duration) => {
+    setDuration(duration)
   }
   
   const handleContinue = () => {

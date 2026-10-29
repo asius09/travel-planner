@@ -2,7 +2,11 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -16,10 +20,18 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@travel-planner/shared": ["../../packages/shared/src/index.ts"],
-      "@travel-planner/shared/*": ["../../packages/shared/src/*"],
-      "@travel-planner/config/*": ["../../packages/config/src/*"]
+      "@/*": [
+        "src/*"
+      ],
+      "@travel-planner/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@travel-planner/shared/*": [
+        "../../packages/shared/src/*"
+      ],
+      "@travel-planner/config/*": [
+        "../../packages/config/src/*"
+      ]
     },
     "types": [
       "jest",
@@ -38,7 +50,8 @@
     "tailwind.config.ts",
     "src/types/**/*.d.ts",
     "src/global.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "expo-env.d.ts"
   ],
   "exclude": [
     "node_modules",

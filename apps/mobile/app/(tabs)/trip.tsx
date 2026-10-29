@@ -96,11 +96,6 @@ const SectionTitle = styled(Text)`
   color: ${({ theme }) => theme.colors.text};
 `
 
-const DestinationsList = styled(FlatList).attrs({
-  showsVerticalScrollIndicator: false,
-  contentContainerStyle: { paddingHorizontal: 20, gap: 12, paddingBottom: 100 },
-})``
-
 const Footer = styled(View)`
   position: absolute;
   bottom: 0;
@@ -291,19 +286,20 @@ export default function TripScreen() {
         <SectionTitle>Destinations</SectionTitle>
       </SectionHeader>
       
-      <DestinationsList
+      <FlatList
         data={tripDestinations}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }: { item: { destinationId: string; position: number; id: string; addedAt: string } }) => (
           <DestinationCard
-            destination={item as any} // Would need proper destination data
+            destination={{ id: item.destinationId, slug: item.destinationId, name: '', country: '', shortDescription: '', description: '', moodTags: [], categoryTags: [], estimatedCostMinor: 0, costCurrency: 'USD', suggestedDaysMin: 1, suggestedDaysMax: 1, highlights: [], heroImage: '', isPublished: true, popularity: 0 } as Destination}
             onPress={() => router.push(`/destination/${item.destinationId}`)}
             onAddToTrip={() => {}}
             addedToTrip={true}
             currency="USD"
-            style={styles.destinationCard}
           />
         )}
-        keyExtractor={item => item.id}
+        keyExtractor={(item: { id: string }) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 100 }}
       />
       
       <Footer>
@@ -328,8 +324,5 @@ const styles = StyleSheet.create({
   emptyState: {
     flex: 1,
     justifyContent: 'center',
-  },
-  destinationCard: {
-    // Override for trip view
   },
 })

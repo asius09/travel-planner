@@ -20,10 +20,12 @@
     "format:check": "prettier --check \"**/*.{ts,json,md}\""
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.6.3",
     "@hono/zod-validator": "^0.2.0",
     "@neondatabase/auth": "0.7.0-beta",
     "better-auth": "^1.0.0",
     "drizzle-orm": "^0.30.0",
+    "drizzle-zod": "^0.8.3",
     "hono": "^4.4.0",
     "jose": "^6.2.13",
     "pg": "^8.12.0",

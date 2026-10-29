@@ -65,8 +65,8 @@ export default function BudgetOnboardingScreen() {
   const router = useRouter()
   const { data, setBudget } = useOnboardingStore()
   
-  const handleSelectBudget = (budget: string) => {
-    setBudget(budget as any)
+  const handleSelectBudget = (budget: import('@travel-planner/shared').Budget) => {
+    setBudget(budget)
   }
   
   const handleContinue = () => {

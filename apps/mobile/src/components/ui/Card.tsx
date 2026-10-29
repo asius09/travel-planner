@@ -1,27 +1,23 @@
 'use client'
 
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, ViewProps } from 'react-native'
 import styled from 'styled-components/native'
 
-interface CardProps {
+interface CardProps extends ViewProps {
   children: React.ReactNode
-  style?: any
   onPress?: () => void
   pressable?: boolean
 }
 
-const StyledCard = styled(View)<CardProps>`
+const StyledCard = styled(View)`
   background-color: ${({ theme }) => theme.colors.surface};
   border-radius: 20px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
   overflow: hidden;
-  ${({ style }) => style}
 `
 
-const PressableCard = styled(StyledCard).attrs({ pressable: true })`
-  /* Pressable styles handled by Pressable component */
-`
+const PressableCard = styled(StyledCard).attrs({ pressable: true })``
 
 export function Card({ children, style, onPress, pressable = false, ...props }: CardProps) {
   const Component = pressable ? PressableCard : StyledCard

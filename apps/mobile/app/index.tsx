@@ -1,7 +1,7 @@
 'use client'
 
-import { View, Text, StyleSheet, ImageBackground } from 'react-native'
-import { Link, useRouter } from 'expo-router'
+import { View, Text, StyleSheet, ImageBackground, Pressable } from 'react-native'
+import { useRouter } from 'expo-router'
 import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Button } from '@/components/ui'
@@ -48,7 +48,7 @@ const ButtonGroup = styled(View)`
   margin-top: 8px;
 `
 
-const SecondaryButton = styled(Link)`
+const SecondaryButton = styled(Pressable)`
   align-self: center;
   margin-top: 8px;
 `

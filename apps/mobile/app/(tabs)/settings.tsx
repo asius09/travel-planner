@@ -173,9 +173,9 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuthStore()
   const { clearTrip } = useTripStore()
   
-  const handleMoodChange = (mood: string) => {
-    setMood(mood as any)
-    setTheme(mood as any)
+  const handleMoodChange = (mood: import('@travel-planner/shared').TravelMood) => {
+    setMood(mood)
+    setTheme(mood)
   }
   
   const handleSignOut = async () => {

@@ -3,14 +3,12 @@
 import { View, Text, StyleSheet } from 'react-native'
 import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
-import { Button } from './Button'
 
 interface ErrorStateProps {
   title?: string
   message: string
   onRetry?: () => void
   retryLabel?: string
-  style?: any
 }
 
 const Container = styled(View)`
@@ -19,7 +17,6 @@ const Container = styled(View)`
   justify-content: center;
   padding: 32px;
   gap: 16px;
-  ${({ style }) => style}
 `
 
 const IconWrapper = styled(View)`
@@ -56,21 +53,26 @@ export function ErrorState({
   title = 'Something went wrong', 
   message, 
   onRetry, 
-  retryLabel = 'Try again', 
-  style 
+  retryLabel = 'Try again' 
 }: ErrorStateProps) {
   return (
-    <Container style={style}>
+    <Container>
       <IconWrapper>
         <Icon name="alert-circle-outline" />
       </IconWrapper>
       <TitleText>{title}</TitleText>
       <MessageText>{message}</MessageText>
       {onRetry && (
-        <Button variant="primary" onPress={onRetry} size="md">
-          {retryLabel}
-        </Button>
+        <Text style={styles.actionText}>{retryLabel}</Text>
       )}
     </Container>
   )
 }
+
+const styles = StyleSheet.create({
+  actionText: {
+    fontFamily: 'Geist_Medium',
+    fontSize: 15,
+    color: '#263F35',
+  },
+})
