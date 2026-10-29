@@ -24,6 +24,7 @@
     "@hono/zod-validator": "^0.2.0",
     "@neondatabase/auth": "0.7.0-beta",
     "better-auth": "^1.0.0",
+    "dotenv": "^18.0.9",
     "drizzle-orm": "^0.30.0",
     "drizzle-zod": "^0.8.3",
     "hono": "^4.4.0",
