@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Mission
-Build the Travel Planner mobile app as a polished, reliable Expo + React Native application. Optimize for the required discovery and trip-planning flows. Follow `DESIGN.md` as the source of truth for product scope, UI, copy, theme tokens, and quality gates.
+Build the Outta travel planner mobile app as a polished, reliable Expo + React Native application. Optimize for the required discovery and trip-planning flows. Follow `DESIGN.md` as the single source of truth for product scope, visual identity, UI copy, theme tokens, and quality gates.
 
 ## Required stack
 - Expo + React Native + TypeScript
@@ -19,7 +19,7 @@ Do not silently replace a chosen technology. If a dependency is incompatible wit
 ## Product scope
 Mandatory:
 1. Welcome and short preference onboarding
-2. Authentication screens
+2. Authentication screens (mandatory before onboarding; zero guest access)
 3. Explore with mood-based hero imagery, search, and working filters
 4. Destination details and Add to Trip
 5. My Trip with remove, reorder, derived budget, and persistence
@@ -28,6 +28,15 @@ Mandatory:
 8. README, screenshots, public repository, and Android APK/demo
 
 Do not add booking, collaboration, live prices, maps, or AI itinerary generation before mandatory flows pass.
+
+## Design implementation rules
+- Read `DESIGN.md` before implementing or changing UI.
+- Follow approved brand, typography, color, icon, illustration, and motion rules.
+- Inspect existing components, tokens, assets, and dependencies before creating alternatives.
+- Verify loading, selected, disabled, error, accessibility, reduced-motion, and responsive states where relevant.
+- Update `DESIGN.md` when an approved design decision changes.
+- Do not treat mockups or concept artwork as implemented assets.
+- Never hardcode hex colors in screen code or documentation; reference existing semantic tokens (`canvas`, `surface`, `text`, `muted`, `border`, `mood.*`).
 
 ## UX rules
 - Use the exact tone and primary copy in `DESIGN.md`. Keep language short, clear, useful, and calm.
