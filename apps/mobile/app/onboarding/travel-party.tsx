@@ -1,84 +1,181 @@
 'use client'
 
-import React from 'react'
-import { View, Text, ScrollView, Pressable } from 'react-native'
+import React, { useRef } from 'react'
+import { View, Text, Pressable, Animated } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Button, ProgressIndicator, OnboardingOption } from '@/components/ui'
+import { OnboardingLayout } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
-import { TRAVEL_PARTY_OPTIONS } from '@/constants/onboarding'
+import type { TravelParty } from '@travel-planner/shared'
 
-export default function TravelPartyOnboardingScreen() {
-  const router = useRouter()
-  const { data, setTravelParty, completeOnboarding } = useOnboardingStore()
-  
-  const handleSelectParty = (party: import('@travel-planner/shared').TravelParty) => {
-    setTravelParty(party)
+interface TravelPartyOption {
+  value: TravelParty
+  label: string
+  subtitle: string
+  icon: keyof typeof Ionicons.glyphMap
+  badgeCount: string
+}
+
+const PARTY_OPTIONS: TravelPartyOption[] = [
+  {
+    value: 'solo',
+    label: 'Solo',
+    subtitle: 'Going alone',
+    icon: 'person-outline',
+    badgeCount: '1 person',
+  },
+  {
+    value: 'couple',
+    label: 'Couple',
+    subtitle: 'Two of us',
+    icon: 'heart-outline',
+    badgeCount: '2 people',
+  },
+  {
+    value: 'friends',
+    label: 'Friends',
+    subtitle: 'Group getaway',
+    icon: 'people-outline',
+    badgeCount: '3+ people',
+  },
+  {
+    value: 'family',
+    label: 'Family',
+    subtitle: 'With children',
+    icon: 'home-outline',
+    badgeCount: 'All ages',
+  },
+]
+
+function PartyCard({
+  item,
+  selected,
+  onSelect,
+}: {
+  item: TravelPartyOption
+  selected: boolean
+  onSelect: () => void
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 20,
+    }).start()
   }
-  
-  const handleContinue = () => {
-    if (data.travelParty) {
-      completeOnboarding()
-      router.push('/onboarding/permissions')
-    }
-  }
-  
-  const handleSkip = () => {
-    completeOnboarding()
-    router.push('/onboarding/permissions')
-  }
-  
-  const handleBack = () => {
-    router.back()
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 4,
+    }).start()
   }
 
   return (
-    <View className="flex-1 bg-canvas">
-      <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
-        <Pressable onPress={handleBack} accessibilityLabel="Back" className="p-2 -ml-2">
-          <Ionicons name="chevron-back" size={28} color="#202822" />
-        </Pressable>
-      </View>
-      
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        <ProgressIndicator currentStep={4} totalSteps={5} className="px-6 mb-2" />
-        
-        <View className="pb-6">
-          <Text className="font-sans font-medium text-[26px] text-text mx-6 mt-2 mb-1">
-            Who's going with you?
-          </Text>
-          <Text className="font-sans text-[15px] text-muted mx-6 mb-6">
-            Solo journeys, family escapes, and group trips need different things.
-          </Text>
-          
-          <View className="px-6 gap-3">
-            {TRAVEL_PARTY_OPTIONS.map((option) => (
-              <OnboardingOption
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={data.travelParty === option.value}
-                onPress={() => handleSelectParty(option.value)}
-              />
-            ))}
+    <Animated.View
+      style={{
+        transform: [{ scale: scaleAnim }],
+        width: '48%',
+        aspectRatio: 0.95,
+      }}
+    >
+      <Pressable
+        onPress={onSelect}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={`${item.label}, ${item.subtitle}`}
+        className={`w-full h-full p-4 rounded-[22px] justify-between border ${
+          selected
+            ? 'bg-surface border-[2px] border-primary shadow-sm'
+            : 'bg-surface border-border/80 active:bg-border/20'
+        }`}
+      >
+        <View className="flex-row items-center justify-between">
+          <View
+            className={`w-11 h-11 rounded-full items-center justify-center ${
+              selected ? 'bg-primary' : 'bg-canvas border border-border'
+            }`}
+          >
+            <Ionicons
+              name={item.icon}
+              size={22}
+              color={selected ? '#D7E58A' : '#263F35'}
+            />
           </View>
+
+          {selected ? (
+            <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
+              <Ionicons name="checkmark" size={14} color="#D7E58A" />
+            </View>
+          ) : (
+            <View className="px-2 py-0.5 rounded-full bg-canvas border border-border/60">
+              <Text className="font-sans text-[10px] text-muted font-medium">
+                {item.badgeCount}
+              </Text>
+            </View>
+          )}
         </View>
-      </ScrollView>
-      
-      <View className="px-6 pb-8 gap-3">
-        <Button 
-          variant="primary" 
-          size="lg" 
-          fullWidth 
-          onPress={handleContinue}
-          disabled={!data.travelParty}
-        >
-          Continue
-        </Button>
-        <Pressable onPress={handleSkip} accessibilityLabel="Skip this question" className="p-2 items-center">
-          <Text className="font-sans text-[15px] text-muted text-center">Skip for now</Text>
-        </Pressable>
+
+        <View className="mt-2">
+          <Text className="font-sans font-semibold text-[17px] text-text">
+            {item.label}
+          </Text>
+          <Text className="font-sans text-[13px] text-muted mt-0.5">
+            {item.subtitle}
+          </Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  )
+}
+
+export default function TravelPartyOnboardingScreen() {
+  const router = useRouter()
+  const { data, setTravelParty } = useOnboardingStore()
+
+  const handleSelect = (party: TravelParty) => {
+    setTravelParty(party)
+  }
+
+  const handleContinue = () => {
+    if (data.travelParty) {
+      router.push('/onboarding/location')
+    }
+  }
+
+  const handleSkip = () => {
+    router.push('/onboarding/location')
+  }
+
+  return (
+    <OnboardingLayout
+      title="Who's going with you?"
+      subtitle="Solo journeys, family escapes, and group trips need different things."
+      currentStep={4}
+      totalSteps={4}
+      primaryButtonText="Continue"
+      primaryButtonDisabled={!data.travelParty}
+      onPrimaryPress={handleContinue}
+      secondaryButtonText="Skip for now"
+      onSecondaryPress={handleSkip}
+    >
+      <View className="px-6 flex-1 justify-center py-4">
+        <View className="flex-row flex-wrap justify-between gap-y-4">
+          {PARTY_OPTIONS.map((item) => (
+            <PartyCard
+              key={item.value}
+              item={item}
+              selected={data.travelParty === item.value}
+              onSelect={() => handleSelect(item.value)}
+            />
+          ))}
+        </View>
       </View>
-    </View>
+    </OnboardingLayout>
   )
 }

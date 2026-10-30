@@ -89,7 +89,52 @@ preferencesRoutes.openapi(
   }
 )
 
-// Create or update preferences
+// Create or update preferences (supports both PUT and POST)
+const updatePreferencesHandler = async (c: any) => {
+  const user = c.get('user')
+  
+  if (!user) {
+    return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
+  }
+  
+  const body = c.req.valid('json')
+  
+  try {
+    const existing = await db.query.userPreferences.findFirst({
+      where: eq(userPreferences.userId, user.id),
+    })
+    
+    let prefs
+    if (existing) {
+      [prefs] = await db
+        .update(userPreferences)
+        .set({
+          ...body,
+          updatedAt: new Date(),
+        })
+        .where(eq(userPreferences.userId, user.id))
+        .returning()
+    } else {
+      [prefs] = await db
+        .insert(userPreferences)
+        .values({
+          userId: user.id,
+          ...body,
+        })
+        .returning()
+    }
+    
+    return c.json({
+      ...prefs,
+      regionCode: prefs.regionCode ?? null,
+      updatedAt: prefs.updatedAt.toISOString(),
+    }, 200)
+  } catch (error) {
+    console.error('Preferences update error:', error)
+    return c.json({ error: 'Failed to update preferences', code: 'UPDATE_FAILED' }, 500)
+  }
+}
+
 preferencesRoutes.openapi(
   createRoute({
     method: 'put',
@@ -114,7 +159,7 @@ preferencesRoutes.openapi(
           },
         },
       },
-            200: {
+      200: {
         description: 'Preferences updated',
         content: {
           'application/json': {
@@ -141,48 +186,59 @@ preferencesRoutes.openapi(
     },
     tags: ['Preferences'],
   }),
-  async (c) => {
-    const user = c.get('user')
-    
-    if (!user) {
-      return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
-    }
-    
-    const body = c.req.valid('json')
-    
-    try {
-      const existing = await db.query.userPreferences.findFirst({
-        where: eq(userPreferences.userId, user.id),
-      })
-      
-      let prefs
-      if (existing) {
-        [prefs] = await db
-          .update(userPreferences)
-          .set({
-            ...body,
-            updatedAt: new Date(),
-          })
-          .where(eq(userPreferences.userId, user.id))
-          .returning()
-      } else {
-        [prefs] = await db
-          .insert(userPreferences)
-          .values({
-            userId: user.id,
-            ...body,
-          })
-          .returning()
-      }
-      
-      return c.json({
-        ...prefs,
-        regionCode: prefs.regionCode ?? null,
-        updatedAt: prefs.updatedAt.toISOString(),
-      }, 200)
-    } catch (error) {
-      console.error('Preferences update error:', error)
-      return c.json({ error: 'Failed to update preferences', code: 'UPDATE_FAILED' }, 500)
-    }
-  }
+  updatePreferencesHandler
+)
+
+preferencesRoutes.openapi(
+  createRoute({
+    method: 'post',
+    path: '/preferences',
+    summary: 'Create user preferences',
+    security: authSecurity,
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: userPreferencesSchema.omit({ userId: true, updatedAt: true }),
+          },
+        },
+      },
+    },
+    responses: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      200: {
+        description: 'Preferences updated',
+        content: {
+          'application/json': {
+            schema: preferencesResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Validation error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+    tags: ['Preferences'],
+  }),
+  updatePreferencesHandler
 )

@@ -18,6 +18,7 @@ export default defineConfig(async () => {
       alias: {
         '@': path.resolve(__dirname, './src'),
         'react-native': path.resolve(__dirname, './src/test/mocks/react-native.ts'),
+        'expo-crypto': path.resolve(__dirname, './src/test/mocks/expo-crypto.ts'),
       },
     },
   }

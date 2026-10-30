@@ -102,16 +102,15 @@ Purpose: explain the benefit and begin planning.
 ### Onboarding
 One question per step, single-tap answers, visible progress, Back and Skip options. Preserve answers if the user leaves or signs in.
 
-1. Mood: “What kind of places do you love?” Options: Nature, City & culture, Beach, Adventure.
-2. Duration: “How long are you thinking?” Options: Weekend, 3–5 days, A week or more, Not sure yet.
-3. Budget: “What feels right for your budget?” Options: Budget-friendly, Balanced, Premium, Not sure yet.
-4. Travel party: “Who’s going with you?” Options: Solo, Couple, Friends, Family.
-5. Optional permission step: “Make planning a little easier.” Explain location and notification benefits separately. Both are optional.
+Screen sequence:
+1. Mood (`/onboarding/mood`): “What kind of places do you love?” Editorial 2×2 photographic card grid. Options: Nature, City & culture, Beach, Adventure.
+2. Duration (`/onboarding/duration`): “How long are you thinking?” Interactive horizontal day selector with stepper (+/-) and smooth central duration morphing text (e.g. "3 days", "1 week", "1 week 2 days"). Maps to schema categories (Weekend, 3–5 days, A week or more, Flexible).
+3. Budget (`/onboarding/budget`): “What feels right for your budget?” Semicircular segmented arc gauge visual showing relative tiers and synchronized interactive cards: Budget-friendly ($), Balanced ($$), Premium ($$$), Not sure yet (~).
+4. Travel party (`/onboarding/travel-party`): “Who’s going with you?” 2×2 grid with clear, inclusive icons: Solo, Couple, Friends, Family.
+5. Location permission (`/onboarding/location`): Dedicated screen with stylized route map card. Copy: “Find places near you” / “Use your location to discover nearby destinations and regional getaways.” CTA: “Enable location”; secondary: “Not now”.
+6. Notification permission (`/onboarding/notifications`): Dedicated screen with stacked notification preview cards. Copy: “Stay on top of your trip” / “Get helpful reminders for the trips you plan.” CTA: “Enable notifications”; secondary: “Maybe later”.
 
-Location copy: “Use your location to help sort nearby ideas.” CTA: “Enable location”; secondary: “Not now”.
-Notification copy: “Get useful trip reminders when you choose.” CTA: “Enable notifications”; secondary: “Maybe later”.
-
-Ask for OS permission only after the user taps the relevant CTA and after a short rationale. Never block Explore if permission is denied. Provide later controls in Settings. Do not collect or persist exact location unless the feature needs it; prefer coarse region or on-device location use.
+Ask for OS permission only after the user taps the relevant CTA and after a short rationale. Never block Explore if permission is denied. Provide later controls in Settings. Completing or skipping the permission screens calls `completeOnboarding()` and navigates to Explore.
 
 ### Authentication
 - Title: “Save your trip”
@@ -275,3 +274,16 @@ Maestro:
 - Sign in/create account and verify sync
 
 Before release: install the APK on a clean Android device/emulator, run core flows, verify the public GitHub repo and README, and ensure no secrets are committed.
+
+## 11. Onboarding Visuals and Motion Specification
+
+| Screen | Primary Visual / Interaction | Motion & Feedback |
+|---|---|---|
+| Progress Indicator | Top navigation row next to Back button; 4 core preference steps. | Animated dot-to-line morphing (`Animated.timing` 220ms). Inactive dots: 8px wide, 4px high. Active: expands to 28px wide bar. |
+| 1. Mood | Editorial 2×2 photographic cards with dark bottom gradient overlays. | Card press scale down to 0.98, spring return on release. Active card features accent outline and check badge. |
+| 2. Duration | Large central duration typography ("3 days", "1 week", etc.) + horizontal day selector with stepper (+/-). | Smooth vertical translation and opacity fade (`Animated.parallel` 180ms) on label change. Haptic feedback on day increment/decrement. |
+| 3. Budget | Semicircular segmented arc gauge with 4 distinct tiers + synced selection list. | Arc fills progressively to selected tier with smooth rotation/color transition. Synchronized card highlight. |
+| 4. Companions | 2×2 grid of soft surface cards with inclusive vector iconography. | Instant active border/accent highlight, 0.98 scale press animation. |
+| 5. Location | Dedicated permission screen with stylized route map graphic (soft blue gradient, curved route, waypoint nodes). | Card subtle entry slide; loading state on "Enable location" button during system prompt. |
+| 6. Notifications | Dedicated permission screen with stacked notification preview cards (trip countdown, packing tips). | Cascading card stack with slight tilt/offset and subtle shadow; completion transitions smoothly to Explore. |
+

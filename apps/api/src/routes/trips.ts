@@ -5,7 +5,7 @@ import { db } from '../db'
 import { trips, tripItems, destinations, insertTripSchema, insertTripItemSchema } from '../db/schema'
 import { eq, and, desc, asc, sql } from 'drizzle-orm'
 import { authMiddleware } from '../middleware'
-import { createTripItemSchema, reorderTripItemsSchema } from '@travel-planner/shared'
+import { addToTripSchema, createTripItemSchema, reorderTripItemsSchema } from '@travel-planner/shared'
 
 const tripItemWithDestinationSchema = z.object({
   id: z.string().uuid(),
@@ -151,7 +151,7 @@ tripsRoutes.openapi(
       body: {
         content: {
           'application/json': {
-            schema: createTripItemSchema,
+            schema: addToTripSchema,
           },
         },
       },

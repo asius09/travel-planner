@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { View, StyleProp, ViewStyle } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, Animated, StyleProp, ViewStyle } from 'react-native'
 
 interface ProgressIndicatorProps {
   currentStep: number
@@ -10,29 +10,65 @@ interface ProgressIndicatorProps {
   className?: string
 }
 
-export function ProgressIndicator({ currentStep, totalSteps, style, className = '' }: ProgressIndicatorProps) {
+function StepIndicatorItem({
+  isActive,
+  isCompleted,
+}: {
+  isActive: boolean
+  isCompleted: boolean
+}) {
+  const widthAnim = useRef(new Animated.Value(isActive ? 28 : 8)).current
+
+  useEffect(() => {
+    Animated.timing(widthAnim, {
+      toValue: isActive ? 28 : 8,
+      duration: 220,
+      useNativeDriver: false,
+    }).start()
+  }, [isActive, widthAnim])
+
+  const backgroundColor = isActive
+    ? '#263F35'
+    : isCompleted
+      ? '#4A6B5D'
+      : '#E0E3D8'
+
   return (
-    <View className={`flex-row items-center gap-1 ${className}`} style={style}>
+    <Animated.View
+      style={{
+        width: widthAnim,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor,
+      }}
+    />
+  )
+}
+
+export function ProgressIndicator({
+  currentStep,
+  totalSteps,
+  style,
+  className = '',
+}: ProgressIndicatorProps) {
+  return (
+    <View
+      className={`flex-row items-center gap-1.5 ${className}`}
+      style={style}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 1, max: totalSteps, now: currentStep }}
+    >
       {Array.from({ length: totalSteps }, (_, i) => {
         const stepNumber = i + 1
         const isActive = stepNumber === currentStep
         const isCompleted = stepNumber < currentStep
-        
+
         return (
-          <View key={i} className="flex-1 flex-row items-center">
-            <View
-              className={`w-2.5 h-2.5 rounded-full ${
-                isCompleted || isActive ? 'bg-primary' : 'bg-border'
-              }`}
-            />
-            {i < totalSteps - 1 ? (
-              <View
-                className={`flex-1 h-0.5 ${
-                  isCompleted ? 'bg-primary' : 'bg-border'
-                }`}
-              />
-            ) : null}
-          </View>
+          <StepIndicatorItem
+            key={i}
+            isActive={isActive}
+            isCompleted={isCompleted}
+          />
         )
       })}
     </View>

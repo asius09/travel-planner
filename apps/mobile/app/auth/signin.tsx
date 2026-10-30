@@ -6,23 +6,58 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
+import { useOnboardingStore, getResumeStep } from '@/store/onboardingStore'
 
 export default function SignInScreen() {
   const router = useRouter()
   const { signIn, loading, error, clearError } = useAuthStore()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+
   const passwordRef = useRef<React.ElementRef<typeof TextInput>>(null)
-  
+
+  const validate = (): boolean => {
+    let valid = true
+    setEmailError(null)
+    setPasswordError(null)
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email.trim()) {
+      setEmailError('Please enter your email')
+      valid = false
+    } else if (!emailRegex.test(email.trim())) {
+      setEmailError('Please enter a valid email address')
+      valid = false
+    }
+
+    if (!password) {
+      setPasswordError('Please enter your password')
+      valid = false
+    }
+
+    return valid
+  }
+
   const handleSignIn = async () => {
-    if (!email || !password) return
-    const success = await signIn(email, password)
+    if (!validate()) return
+
+    const success = await signIn(email.trim(), password)
     if (success) {
-      router.replace('/(tabs)')
+      const isComplete = useOnboardingStore.getState().data.completed
+      if (isComplete) {
+        router.replace('/(tabs)/explore')
+      } else {
+        const resumeStep = getResumeStep(useOnboardingStore.getState().data)
+        router.replace(resumeStep as any)
+      }
     }
   }
-  
+
   const handleBack = () => {
     router.back()
   }
@@ -34,11 +69,18 @@ export default function SignInScreen() {
           <Ionicons name="chevron-back" size={28} color="#202822" />
         </Pressable>
       </View>
-      
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
-        <Text className="font-sans font-medium text-[26px] text-text mx-6 mt-6 mb-2">Welcome back</Text>
-        <Text className="font-sans text-[15px] text-muted mx-6 mb-8">Sign in to keep your plans in sync.</Text>
-        
+
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text className="font-sans font-medium text-[28px] text-text mx-6 mt-4 mb-2">
+          Welcome back
+        </Text>
+        <Text className="font-sans text-[15px] text-muted mx-6 mb-8 leading-6">
+          Sign in to keep your plans in sync.
+        </Text>
+
         <View className="px-6 gap-4">
           <Input
             label="Email"
@@ -49,11 +91,13 @@ export default function SignInScreen() {
             value={email}
             onChangeText={(text) => {
               setEmail(text)
+              if (emailError) setEmailError(null)
               clearError()
             }}
             onSubmitEditing={() => passwordRef.current?.focus()}
-            error={error?.includes('email') ? error : undefined}
+            error={emailError ?? (error?.toLowerCase().includes('email') ? error : undefined)}
           />
+
           <Input
             ref={passwordRef}
             label="Password"
@@ -63,13 +107,14 @@ export default function SignInScreen() {
             value={password}
             onChangeText={(text) => {
               setPassword(text)
+              if (passwordError) setPasswordError(null)
               clearError()
             }}
             onSubmitEditing={handleSignIn}
-            error={error?.includes('password') || error?.includes('credentials') ? error : undefined}
+            error={passwordError ?? undefined}
             rightIcon={
               <Pressable
-                onPress={() => setShowPassword(prev => !prev)}
+                onPress={() => setShowPassword((prev) => !prev)}
                 accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -81,31 +126,38 @@ export default function SignInScreen() {
               </Pressable>
             }
           />
-          
+
           {error ? (
-            <Text className="font-sans text-xs text-[#E57373] -mt-2">{error}</Text>
+            <Text className="font-sans text-xs text-[#E57373] -mt-1">{error}</Text>
           ) : null}
-          
-          <Button 
-            variant="primary" 
-            size="lg" 
-            fullWidth 
-            onPress={handleSignIn}
-            loading={loading}
-            disabled={loading}
-          >
-            Sign in
-          </Button>
+
+          <View className="mt-2">
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onPress={handleSignIn}
+              loading={loading}
+              disabled={loading}
+            >
+              Sign in
+            </Button>
+          </View>
         </View>
       </ScrollView>
-      
+
       <View className="px-6 pb-8 gap-4">
         <View className="flex-row items-center gap-3 my-2">
           <View className="flex-1 h-[1px] bg-border" />
           <Text className="font-sans text-xs text-muted">Or</Text>
           <View className="flex-1 h-[1px] bg-border" />
         </View>
-        <Button variant="outline" size="lg" fullWidth onPress={() => router.push('/auth/signup')}>
+        <Button
+          variant="outline"
+          size="lg"
+          fullWidth
+          onPress={() => router.push('/auth/signup')}
+        >
           Create account
         </Button>
       </View>
