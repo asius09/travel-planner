@@ -25,8 +25,8 @@ export const FlatList = React.forwardRef((props, ref) => {
   return React.createElement('FlatList', { ref, ...props })
 })
 
-export const ImageBackground = React.forwardRef((props, ref) => {
-  return React.createElement('ImageBackground', { ref, ...props })
+export const ImageBackground = React.forwardRef(({ children, style, ...props }: any, ref) => {
+  return React.createElement(View, { ref, style, ...props }, children)
 })
 
 export const TextInput = React.forwardRef((props, ref) => {
@@ -34,7 +34,7 @@ export const TextInput = React.forwardRef((props, ref) => {
 })
 
 export const StyleSheet = {
-  create: (obj: any) => obj,
+  create: <T extends Record<string, unknown>>(obj: T): T => obj,
   hairlineWidth: 1,
 }
 
@@ -56,7 +56,7 @@ export const Alert = {
 
 export const Platform = {
   OS: 'ios',
-  select: (obj: any) => obj.ios,
+  select: <T>(obj: Partial<Record<string, T>>): T | undefined => obj.ios,
 }
 
 export const Dimensions = {
@@ -75,7 +75,7 @@ export const KeyboardAvoidingView = React.forwardRef((props, ref) => {
 
 export const SafeAreaView = React.forwardRef((props, ref) => {
   return React.createElement('SafeAreaView', { ref, ...props })
-}
+})
 
 export const PixelRatio = {
   get: () => 1,

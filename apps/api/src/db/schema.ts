@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, text, integer, boolean, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
 
@@ -8,6 +9,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }),
   emailVerified: boolean('email_verified').default(false).notNull(),
+  image: text('image'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
@@ -32,6 +34,7 @@ export const accounts = pgTable('accounts', {
   providerId: varchar('provider_id', { length: 255 }).notNull(),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
   accessTokenExpiresAt: timestamp('access_token_expires_at', { withTimezone: true }),
   refreshTokenExpiresAt: timestamp('refresh_token_expires_at', { withTimezone: true }),
   scope: varchar('scope', { length: 255 }),
@@ -131,3 +134,30 @@ export type NewUserPreferences = typeof userPreferences.$inferInsert
 export type NewDestination = typeof destinations.$inferInsert
 export type NewTrip = typeof trips.$inferInsert
 export type NewTripItem = typeof tripItems.$inferInsert
+// Relations (used by Drizzle's relational queries, e.g. db.query.tripItems)
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  accounts: many(accounts),
+  trips: many(trips),
+}))
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}))
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, { fields: [accounts.userId], references: [users.id] }),
+}))
+
+export const tripsRelations = relations(trips, ({ one, many }) => ({
+  user: one(users, { fields: [trips.userId], references: [users.id] }),
+  items: many(tripItems),
+}))
+
+export const tripItemsRelations = relations(tripItems, ({ one }) => ({
+  trip: one(trips, { fields: [tripItems.tripId], references: [trips.id] }),
+  destination: one(destinations, {
+    fields: [tripItems.destinationId],
+    references: [destinations.id],
+  }),
+}))

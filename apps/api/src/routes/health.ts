@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { OpenAPIHono } from '@hono/zod-openapi'
+import type { AppEnv } from '../types'
 
 const healthResponseSchema = z.object({
   status: z.enum(['ok', 'degraded', 'down']),
@@ -8,7 +9,7 @@ const healthResponseSchema = z.object({
   database: z.boolean(),
 })
 
-export const healthRoute = new OpenAPIHono()
+export const healthRoute = new OpenAPIHono<AppEnv>()
 
 healthRoute.openapi(
   createRoute({
@@ -31,11 +32,13 @@ healthRoute.openapi(
     const { checkDatabaseConnection } = await import('../db')
     const dbHealthy = await checkDatabaseConnection()
     
-    return c.json({
+    const body: z.infer<typeof healthResponseSchema> = {
       status: dbHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version ?? '0.0.0',
       database: dbHealthy,
-    })
+    }
+
+    return c.json(body, 200)
   }
 )

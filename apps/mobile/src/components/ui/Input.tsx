@@ -1,100 +1,62 @@
 'use client'
 
-import { TextInput, View, Text, StyleSheet } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { TextInput, View, Text, TextInputProps, StyleProp, ViewStyle } from 'react-native'
 
-interface InputProps {
+interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string
   error?: string
   helperText?: string
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
-  style?: any
-  [key: string]: any
+  style?: StyleProp<ViewStyle>
+  className?: string
 }
 
-const InputContainer = styled(View)`
-  width: 100%;
-  gap: 6px;
-`
-
-const Label = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const InputWrapper = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  background-color: ${({ theme }) => theme.colors.surface};
-  border-radius: 14px;
-  border-width: 1px;
-  border-color: ${({ theme, $hasError }) => $hasError ? '#E57373' : theme.colors.border};
-  padding-horizontal: 16px;
-`
-
-const StyledInput = styled(TextInput).attrs({
-  placeholderTextColor: '#777F78',
-})`
-  flex: 1;
-  font-family: Geist_Regular;
-  font-size: 16px;
-  color: ${({ theme }) => theme.colors.text};
-  padding-vertical: 14px;
-`
-
-const HelperText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 12px;
-  color: ${({ theme, $hasError }) => $hasError ? '#E57373' : theme.colors.muted};
-`
-
-export function Input({ 
-  label, 
-  error, 
-  helperText, 
-  leftIcon, 
-  rightIcon, 
-  style,
-  ...props 
-}: InputProps) {
+export const Input = React.forwardRef<React.ElementRef<typeof TextInput>, InputProps>(function Input(
+  {
+    label,
+    error,
+    helperText,
+    leftIcon,
+    rightIcon,
+    style,
+    className = '',
+    placeholderTextColor = '#777F78',
+    ...props
+  },
+  ref
+) {
   const hasError = !!error
-  
-  return (
-    <InputContainer style={style}>
-      {label && <Label>{label}</Label>}
-      <InputWrapper $hasError={hasError}>
-        {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
-        <StyledInput
-          $hasError={hasError}
-          {...props}
-          style={[
-            styles.input,
-            leftIcon && styles.inputWithLeftIcon,
-            rightIcon && styles.inputWithRightIcon,
-            props.style,
-          ]}
-        />
-        {rightIcon && <View style={styles.iconContainer}>{rightIcon}</View>}
-      </InputWrapper>
-      {error && <HelperText $hasError={true}>{error}</HelperText>}
-      {!error && helperText && <HelperText>{helperText}</HelperText>}
-    </InputContainer>
-  )
-}
 
-const styles = StyleSheet.create({
-  iconContainer: {
-    paddingHorizontal: 8,
-  },
-  input: {
-    flex: 1,
-  },
-  inputWithLeftIcon: {
-    paddingLeft: 0,
-  },
-  inputWithRightIcon: {
-    paddingRight: 0,
-  },
+  return (
+    <View className={`w-full gap-1.5 ${className}`} style={style}>
+      {label ? (
+        <Text className="font-medium text-sm text-text">{label}</Text>
+      ) : null}
+
+      <View
+        className={`flex-row items-center bg-surface rounded-[14px] border px-4 ${
+          hasError ? 'border-[#E57373]' : 'border-border'
+        }`}
+      >
+        {leftIcon ? <View className="mr-2">{leftIcon}</View> : null}
+
+        <TextInput
+          ref={ref}
+          className="flex-1 font-sans text-base text-text py-3.5"
+          placeholderTextColor={placeholderTextColor}
+          {...props}
+        />
+
+        {rightIcon ? <View className="ml-2">{rightIcon}</View> : null}
+      </View>
+
+      {hasError ? (
+        <Text className="font-normal text-xs text-[#E57373]">{error}</Text>
+      ) : helperText ? (
+        <Text className="font-normal text-xs text-muted">{helperText}</Text>
+      ) : null}
+    </View>
+  )
 })

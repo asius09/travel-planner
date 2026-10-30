@@ -1,8 +1,9 @@
 'use client'
 
-import { View, Text, StyleSheet } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { View, Text, StyleProp, ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { Button } from './Button'
 
 interface EmptyStateProps {
   icon?: string
@@ -10,71 +11,33 @@ interface EmptyStateProps {
   description: string
   actionLabel?: string
   onAction?: () => void
+  style?: StyleProp<ViewStyle>
+  className?: string
 }
-
-const Container = styled(View)`
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-  gap: 16px;
-`
-
-const IconWrapper = styled(View)`
-  width: 80px;
-  height: 80px;
-  border-radius: 40px;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ theme }) => theme.colors.soft};
-`
-
-const Icon = styled(Ionicons)`
-  font-size: 36px;
-  color: ${({ theme }) => theme.colors.primary};
-`
-
-const TitleText = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 20px;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const DescriptionText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.muted};
-  line-height: 22px;
-  max-width: 280px;
-`
 
 export function EmptyState({ 
   icon = 'compass-outline', 
   title, 
   description, 
   actionLabel, 
-  onAction 
+  onAction,
+  style,
+  className = '',
 }: EmptyStateProps) {
   return (
-    <Container>
-      <IconWrapper>
-        <Icon name={icon} />
-      </IconWrapper>
-      <TitleText>{title}</TitleText>
-      <DescriptionText>{description}</DescriptionText>
-      {actionLabel && onAction && (
-        <Text style={styles.actionText}>{actionLabel}</Text>
-      )}
-    </Container>
+    <View className={`flex-1 items-center justify-center p-8 gap-4 ${className}`} style={style}>
+      <View className="w-20 h-20 rounded-full items-center justify-center bg-soft">
+        <Ionicons name={icon as any} size={36} color="#263F35" />
+      </View>
+      <Text className="font-medium text-xl text-center text-text">{title}</Text>
+      <Text className="font-normal text-[15px] text-center text-muted leading-[22px] max-w-[280px]">
+        {description}
+      </Text>
+      {actionLabel && onAction ? (
+        <Button variant="primary" size="md" onPress={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  actionText: {
-    fontFamily: 'Geist_Medium',
-    fontSize: 15,
-    color: '#263F35',
-  },
-})

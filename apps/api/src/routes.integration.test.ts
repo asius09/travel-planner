@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { Hono } from 'hono'
-import { createApp } from '../src/index'
+import { createApp } from './app'
 import { db } from '../src/db'
 import * as schema from '../src/db/schema'
 import { eq } from 'drizzle-orm'
@@ -12,7 +11,7 @@ describe('Health Endpoint', () => {
   it('should return ok status', async () => {
     const res = await app.request('/health')
     expect(res.status).toBe(200)
-    const data = await res.json()
+    const data = (await res.json()) as { status: string; database: boolean }
     expect(data.status).toBe('ok')
     expect(data.database).toBe(true)
   })
@@ -60,7 +59,7 @@ describe('Destinations Endpoint', () => {
   it('should return list of destinations', async () => {
     const res = await app.request('/destinations')
     expect(res.status).toBe(200)
-    const data = await res.json()
+    const data = (await res.json()) as { data: unknown[]; total: number }
     expect(data.data).toBeInstanceOf(Array)
     expect(data.total).toBeGreaterThan(0)
   })
@@ -70,9 +69,9 @@ describe('Destinations Endpoint', () => {
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data).toBeInstanceOf(Array)
-    data.forEach((d: any) => {
-      expect(d.moodTags).toContain('nature')
-    })
+    for (const destination of data as Array<{ moodTags: string[] }>) {
+      expect(destination.moodTags).toContain('nature')
+    }
   })
 
   it('should return 404 for unknown destination', async () => {

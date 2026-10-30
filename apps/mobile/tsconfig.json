@@ -18,10 +18,9 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@travel-planner/shared": [
         "../../packages/shared/src/index.ts"
@@ -37,7 +36,6 @@
       "jest",
       "@testing-library/react-native",
       "vitest/globals",
-      "styled-components",
       "react-native"
     ]
   },
@@ -45,8 +43,6 @@
     "src/**/*",
     "app/**/*",
     ".expo/types/**/*.ts",
-    "vitest.config.ts",
-    "vitest.config.mobile.ts",
     "tailwind.config.ts",
     "src/types/**/*.d.ts",
     "src/global.d.ts",

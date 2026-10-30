@@ -31,11 +31,11 @@ export default function TabsLayout() {
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ focused, color }: any) => (
             <Ionicons 
               name={focused ? 'compass' : 'compass-outline'} 
               size={24} 
-              color={color} 
+              color={color ?? undefined} 
             />
           ),
         }}
@@ -44,11 +44,11 @@ export default function TabsLayout() {
         name="trip"
         options={{
           title: 'My Trip',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ focused, color }: any) => (
             <Ionicons 
               name={focused ? 'bookmark' : 'bookmark-outline'} 
               size={24} 
-              color={color} 
+              color={color ?? undefined} 
             />
           ),
         }}
@@ -57,11 +57,11 @@ export default function TabsLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ focused, color }) => (
+          tabBarIcon: ({ focused, color }: any) => (
             <Ionicons 
               name={focused ? 'settings' : 'settings-outline'} 
               size={24} 
-              color={color} 
+              color={color ?? undefined} 
             />
           ),
         }}

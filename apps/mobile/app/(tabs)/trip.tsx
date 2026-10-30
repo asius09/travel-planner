@@ -1,112 +1,15 @@
 'use client'
 
-import { View, Text, StyleSheet, ScrollView, FlatList, Alert } from 'react-native'
+import React from 'react'
+import { View, Text, FlatList, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import styled from 'styled-components/native'
-import { Ionicons } from '@expo/vector-icons'
 import { Button, EmptyState, DestinationCard } from '@/components/ui'
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
 import { useTripStore } from '@/store/tripStore'
-import { formatCurrency } from '@travel-planner/shared'
 import type { Destination } from '@travel-planner/shared'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
-
-const Container = styled(View)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.canvas};
-`
-
-const Header = styled(View)`
-  padding: 20px 20px 12px;
-`
-
-const TitleText = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 28px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const SummaryCard = styled(View)`
-  background-color: ${({ theme }) => theme.colors.surface};
-  border-radius: 20px;
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  padding: 20px;
-  margin: 0 20px 16px;
-  gap: 12px;
-`
-
-const SummaryRow = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`
-
-const SummaryLabel = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const SummaryValue = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 17px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const BudgetTotal = styled(View)`
-  flex-direction: row;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-top: 8px;
-  border-top-width: 1px;
-  border-top-color: ${({ theme }) => theme.colors.border};
-`
-
-const BudgetLabel = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const BudgetValue = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 28px;
-  color: ${({ theme }) => theme.colors.primary};
-`
-
-const BudgetBasis = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.muted};
-  margin-left: 8px;
-`
-
-const SectionHeader = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px 12px;
-`
-
-const SectionTitle = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 20px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const Footer = styled(View)`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px 20px;
-  background-color: ${({ theme }) => theme.colors.canvas};
-  border-top-width: 1px;
-  border-top-color: ${({ theme }) => theme.colors.border};
-  gap: 12px;
-`
 
 async function fetchTrip() {
   const response = await fetch(`${API_URL}/trips`, {
@@ -122,7 +25,6 @@ async function fetchTrip() {
 }
 
 function getAuthToken() {
-  // In a real app, get from auth store
   return ''
 }
 
@@ -143,7 +45,7 @@ async function reorderTripApi(items: { destinationId: string; position: number }
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${getAuthToken()}`,
     },
-    body: JSON.stringify({ tripId: '', items }), // tripId would come from trip data
+    body: JSON.stringify({ tripId: '', items }),
   })
   if (!response.ok) throw new Error('Failed to reorder trip')
 }
@@ -151,15 +53,16 @@ async function reorderTripApi(items: { destinationId: string; position: number }
 export default function TripScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { destinations: localDestinations, removeDestination, reorderDestinations, isInTrip } = useTripStore()
+  const { destinations: localDestinations, removeDestination, reorderDestinations } = useTripStore()
   
   const { data: trip, isLoading, isError, refetch } = useQuery({
     queryKey: ['trip'],
     queryFn: fetchTrip,
     staleTime: 30 * 1000,
   })
+
+  useRefreshOnFocus(refetch)
   
-  // For now, use local destinations until API is connected
   const tripDestinations = localDestinations
   
   const removeMutation = useMutation({
@@ -200,39 +103,29 @@ export default function TripScreen() {
     )
   }
   
-  const handleReorder = (fromIndex: number, toIndex: number) => {
-    reorderDestinations(fromIndex, toIndex)
-    // Sync to server
-    const items = localDestinations.map((d, i) => ({
-      destinationId: d.destinationId,
-      position: i,
-    }))
-    reorderMutation.mutate(items)
-  }
-  
-  const totalCost = 0 // Would calculate from destination data
+  const totalCost = 0
   const destinationCount = tripDestinations.length
 
   if (isLoading && tripDestinations.length === 0) {
     return (
-      <Container>
-        <Header>
-          <TitleText>Your trip, taking shape.</TitleText>
-        </Header>
-        <View style={styles.skeletonContainer}>
-          <View style={styles.skeletonCard} />
-          <View style={styles.skeletonCard} />
+      <View className="flex-1 bg-canvas">
+        <View className="px-5 pt-5 pb-3">
+          <Text className="font-sans font-medium text-[28px] text-text">Your trip, taking shape.</Text>
         </View>
-      </Container>
+        <View className="px-5 gap-3">
+          <View className="h-[120px] rounded-2xl bg-border" />
+          <View className="h-[120px] rounded-2xl bg-border" />
+        </View>
+      </View>
     )
   }
   
   if (isError) {
     return (
-      <Container>
-        <Header>
-          <TitleText>Your trip, taking shape.</TitleText>
-        </Header>
+      <View className="flex-1 bg-canvas">
+        <View className="px-5 pt-5 pb-3">
+          <Text className="font-sans font-medium text-[28px] text-text">Your trip, taking shape.</Text>
+        </View>
         <EmptyState
           icon="alert-circle-outline"
           title="Unable to load trip"
@@ -240,55 +133,54 @@ export default function TripScreen() {
           actionLabel="Try again"
           onAction={refetch}
         />
-      </Container>
+      </View>
     )
   }
 
   if (tripDestinations.length === 0) {
     return (
-      <Container>
-        <Header>
-          <TitleText>Your trip, taking shape.</TitleText>
-        </Header>
+      <View className="flex-1 bg-canvas">
+        <View className="px-5 pt-5 pb-3">
+          <Text className="font-sans font-medium text-[28px] text-text">Your trip, taking shape.</Text>
+        </View>
         <EmptyState
           icon="compass-outline"
           title="Every great trip starts somewhere."
           description="Explore destinations and add the places you'd love to visit."
           actionLabel="Explore destinations"
           onAction={() => router.push('/(tabs)/explore')}
-          style={styles.emptyState}
         />
-      </Container>
+      </View>
     )
   }
 
   return (
-    <Container>
-      <Header>
-        <TitleText>Your trip, taking shape.</TitleText>
-      </Header>
+    <View className="flex-1 bg-canvas">
+      <View className="px-5 pt-5 pb-3">
+        <Text className="font-sans font-medium text-[28px] text-text">Your trip, taking shape.</Text>
+      </View>
       
-      <SummaryCard>
-        <SummaryRow>
-          <SummaryLabel>Destinations</SummaryLabel>
-          <SummaryValue>{destinationCount}</SummaryValue>
-        </SummaryRow>
-        <BudgetTotal>
+      <View className="bg-surface rounded-[20px] border border-border p-5 mx-5 mb-4 gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="font-sans text-[15px] text-muted">Destinations</Text>
+          <Text className="font-sans font-medium text-[17px] text-text">{destinationCount}</Text>
+        </View>
+        <View className="flex-row items-baseline justify-between pt-2 border-t border-border">
           <View>
-            <BudgetLabel>Estimated budget</BudgetLabel>
-            <BudgetBasis>Estimates shown in USD</BudgetBasis>
+            <Text className="font-sans text-[15px] text-muted">Estimated budget</Text>
+            <Text className="font-sans text-[13px] text-muted ml-0 mt-0.5">Estimates shown in USD</Text>
           </View>
-          <BudgetValue>${(totalCost / 100).toLocaleString()}</BudgetValue>
-        </BudgetTotal>
-      </SummaryCard>
+          <Text className="font-sans font-medium text-[28px] text-primary">${(totalCost / 100).toLocaleString()}</Text>
+        </View>
+      </View>
       
-      <SectionHeader>
-        <SectionTitle>Destinations</SectionTitle>
-      </SectionHeader>
+      <View className="px-5 pb-3">
+        <Text className="font-sans font-medium text-xl text-text">Destinations</Text>
+      </View>
       
       <FlatList
         data={tripDestinations}
-        renderItem={({ item }: { item: { destinationId: string; position: number; id: string; addedAt: string } }) => (
+        renderItem={({ item }: any) => (
           <DestinationCard
             destination={{ id: item.destinationId, slug: item.destinationId, name: '', country: '', shortDescription: '', description: '', moodTags: [], categoryTags: [], estimatedCostMinor: 0, costCurrency: 'USD', suggestedDaysMin: 1, suggestedDaysMax: 1, highlights: [], heroImage: '', isPublished: true, popularity: 0 } as Destination}
             onPress={() => router.push(`/destination/${item.destinationId}`)}
@@ -297,32 +189,16 @@ export default function TripScreen() {
             currency="USD"
           />
         )}
-        keyExtractor={(item: { id: string }) => item.id}
+        keyExtractor={(item: any) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 100 }}
       />
       
-      <Footer>
+      <View className="absolute bottom-0 left-0 right-0 p-5 bg-canvas border-t border-border">
         <Button variant="outline" size="lg" fullWidth onPress={() => router.push('/(tabs)/explore')}>
           Add another place
         </Button>
-      </Footer>
-    </Container>
+      </View>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  skeletonContainer: {
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  skeletonCard: {
-    height: 120,
-    borderRadius: 16,
-    backgroundColor: '#E5E7DF',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-})

@@ -1,86 +1,33 @@
 'use client'
 
-import { View, StyleSheet } from 'react-native'
-import styled, { keyframes } from 'styled-components/native'
-import { Animated } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, Animated, StyleProp, ViewStyle } from 'react-native'
 
-const shimmerAnimation = keyframes`
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
-`
+export function SkeletonCard({ style, className = '' }: { style?: StyleProp<ViewStyle>; className?: string } = {}) {
+  const opacity = useRef(new Animated.Value(0.4)).current
 
-const SkeletonContainer = styled(View)`
-  background-color: ${({ theme }) => theme.colors.surface};
-  border-radius: 20px;
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  overflow: hidden;
-`
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [opacity])
 
-const SkeletonImage = styled(Animated.View)`
-  height: 180px;
-  width: 100%;
-  background-color: ${({ theme }) => theme.colors.border};
-`
-
-const SkeletonContent = styled(View)`
-  padding: 14px 16px;
-  gap: 10px;
-`
-
-const SkeletonLine = styled(Animated.View)<{ $width?: string }>`
-  height: 16px;
-  border-radius: 8px;
-  background-color: ${({ theme }) => theme.colors.border};
-  width: ${({ $width }) => $width || '60%'};
-`
-
-const SkeletonLineShort = styled(SkeletonLine)`
-  width: 40%;
-`
-
-const SkeletonMetaRow = styled(View)`
-  flex-direction: row;
-  gap: 16px;
-  margin-top: 4px;
-`
-
-const SkeletonMetaItem = styled(Animated.View)`
-  height: 14px;
-  width: 80px;
-  border-radius: 7px;
-  background-color: ${({ theme }) => theme.colors.border};
-`
-
-export function SkeletonCard() {
-  const animation = new Animated.Value(0)
-  
-  // Start animation on mount
-  // Note: In a real app, you'd use useEffect to start/stop
-  
   return (
-    <SkeletonContainer>
-      <SkeletonImage />
-      <SkeletonContent>
-        <View style={styles.nameRow}>
-          <SkeletonLine $width="70%" />
-          <SkeletonLineShort $width="30%" />
+    <View className={`bg-surface rounded-[20px] border border-border overflow-hidden ${className}`} style={style}>
+      <Animated.View className="h-[180px] w-full bg-border" style={{ opacity }} />
+      <View className="p-3.5 gap-2.5">
+        <Animated.View className="h-4 rounded-lg bg-border w-3/5" style={{ opacity }} />
+        <Animated.View className="h-4 rounded-lg bg-border w-2/5" style={{ opacity }} />
+        <View className="flex-row gap-4 mt-1">
+          <Animated.View className="h-3.5 w-20 rounded-[7px] bg-border" style={{ opacity }} />
+          <Animated.View className="h-3.5 w-20 rounded-[7px] bg-border" style={{ opacity }} />
         </View>
-        <SkeletonLine $width="85%" />
-        <SkeletonLine $width="100%" />
-        <SkeletonMetaRow>
-          <SkeletonMetaItem />
-          <SkeletonMetaItem />
-        </SkeletonMetaRow>
-      </SkeletonContent>
-    </SkeletonContainer>
+      </View>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  nameRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-})

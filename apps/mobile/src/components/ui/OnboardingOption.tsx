@@ -1,7 +1,7 @@
 'use client'
 
-import { Pressable, Text, View, StyleSheet } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { Pressable, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 
 interface OnboardingOptionProps {
@@ -11,56 +11,8 @@ interface OnboardingOptionProps {
   selected: boolean
   onPress: () => void
   disabled?: boolean
+  className?: string
 }
-
-const OptionContainer = styled(Pressable)`
-  flex-direction: row;
-  align-items: center;
-  padding: 16px;
-  border-radius: 16px;
-  border-width: 2px;
-  border-color: ${({ $selected, theme }: { $selected?: boolean; theme: { colors: { primary: string; border: string; soft: string } } }) => $selected ? theme.colors.primary : theme.colors.border};
-  background-color: ${({ $selected, theme }: { $selected?: boolean; theme: { colors: { soft: string; surface: string } } }) => $selected ? theme.colors.soft : theme.colors.surface};
-  gap: 14px;
-  min-height: 64px;
-`
-
-const IconWrapper = styled(View)`
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ $selected, theme }: { $selected?: boolean; theme: { colors: { primary: string; surface: string; border: string } } }) => $selected ? theme.colors.primary : theme.colors.border};
-`
-
-const Icon = styled(Ionicons)`
-  font-size: 20px;
-  color: ${({ $selected, theme }: { $selected?: boolean; theme: { colors: { primary: string } } }) => $selected ? '#FFFFFF' : theme.colors.primary};
-`
-
-const TextContainer = styled(View)`
-  flex: 1;
-  min-width: 0;
-`
-
-const LabelText = styled(Text)`
-  font-family: ${({ $selected }: { $selected?: boolean }) => $selected ? 'Geist_Medium' : 'Geist_Regular'};
-  font-size: 16px;
-  color: ${({ theme }: { theme: { colors: { text: string } } }) => theme.colors.text};
-`
-
-const DescriptionText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 13px;
-  color: ${({ theme }: { theme: { colors: { muted: string } } }) => theme.colors.muted};
-  margin-top: 2px;
-`
-
-const Checkmark = styled(Ionicons)`
-  font-size: 24px;
-  color: ${({ $selected, theme }: { $selected?: boolean; theme: { colors: { primary: string } } }) => $selected ? theme.colors.primary : 'transparent'};
-`
 
 export function OnboardingOption({ 
   label, 
@@ -69,26 +21,47 @@ export function OnboardingOption({
   selected, 
   onPress, 
   disabled = false,
+  className = '',
 }: OnboardingOptionProps) {
   return (
-    <OptionContainer
-      $selected={selected}
+    <Pressable
+      className={`flex-row items-center p-4 rounded-2xl border-2 gap-3.5 min-h-[64px] ${
+        selected ? 'border-primary bg-soft' : 'border-border bg-surface'
+      } ${className}`}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
       accessibilityLabel={label}
     >
-      {icon && (
-        <IconWrapper $selected={selected}>
-          <Icon name={icon as any} $selected={selected} />
-        </IconWrapper>
-      )}
-      <TextContainer>
-        <LabelText $selected={selected}>{label}</LabelText>
-        {description && <DescriptionText>{description}</DescriptionText>}
-      </TextContainer>
-      <Checkmark name="checkmark-circle" $selected={selected} />
-    </OptionContainer>
+      {icon ? (
+        <View
+          className={`w-10 h-10 rounded-xl items-center justify-center ${
+            selected ? 'bg-primary' : 'bg-border'
+          }`}
+        >
+          <Ionicons
+            name={icon as any}
+            size={20}
+            color={selected ? '#FFFFFF' : '#263F35'}
+          />
+        </View>
+      ) : null}
+
+      <View className="flex-1 min-w-0">
+        <Text className={`text-base text-text ${selected ? 'font-medium' : 'font-normal'}`}>
+          {label}
+        </Text>
+        {description ? (
+          <Text className="font-normal text-xs text-muted mt-0.5">{description}</Text>
+        ) : null}
+      </View>
+
+      <Ionicons
+        name="checkmark-circle"
+        size={24}
+        color={selected ? '#263F35' : 'transparent'}
+      />
+    </Pressable>
   )
 }

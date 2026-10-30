@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { useThemeStore } from '@/store/themeStore'
+import { useThemeStore, type TravelMood } from '@/store/themeStore'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { useTripStore } from '@/store/tripStore'
 
@@ -24,7 +24,7 @@ describe('Theme Store', () => {
 
   it('should handle all four mood themes', () => {
     const store = useThemeStore.getState()
-    const themes = ['nature', 'city', 'beach', 'adventure']
+    const themes: TravelMood[] = ['nature', 'city', 'beach', 'adventure']
     themes.forEach((theme) => {
       store.setTheme(theme)
       const updated = useThemeStore.getState()

@@ -1,57 +1,40 @@
 'use client'
 
-import { View, StyleSheet } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { View, StyleProp, ViewStyle } from 'react-native'
 
 interface ProgressIndicatorProps {
   currentStep: number
   totalSteps: number
+  style?: StyleProp<ViewStyle>
+  className?: string
 }
 
-const ProgressContainer = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-`
-
-const StepDot = styled(View)<{ $active: boolean; $completed: boolean }>`
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background-color: ${({ $active, $completed, theme }) => 
-    $completed ? theme.colors.primary : $active ? theme.colors.primary : theme.colors.border
-  };
-`
-
-const StepLine = styled(View)<{ $completed: boolean }>`
-  flex: 1;
-  height: 2px;
-  background-color: ${({ $completed, theme }) => $completed ? theme.colors.primary : theme.colors.border};
-`
-
-export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicatorProps) {
+export function ProgressIndicator({ currentStep, totalSteps, style, className = '' }: ProgressIndicatorProps) {
   return (
-    <ProgressContainer>
+    <View className={`flex-row items-center gap-1 ${className}`} style={style}>
       {Array.from({ length: totalSteps }, (_, i) => {
         const stepNumber = i + 1
         const isActive = stepNumber === currentStep
         const isCompleted = stepNumber < currentStep
         
         return (
-          <View key={i} style={styles.stepContainer}>
-            <StepDot $active={isActive} $completed={isCompleted} />
-            {i < totalSteps - 1 && <StepLine $completed={isCompleted} />}
+          <View key={i} className="flex-1 flex-row items-center">
+            <View
+              className={`w-2.5 h-2.5 rounded-full ${
+                isCompleted || isActive ? 'bg-primary' : 'bg-border'
+              }`}
+            />
+            {i < totalSteps - 1 ? (
+              <View
+                className={`flex-1 h-0.5 ${
+                  isCompleted ? 'bg-primary' : 'bg-border'
+                }`}
+              />
+            ) : null}
           </View>
         )
       })}
-    </ProgressContainer>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  stepContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-})

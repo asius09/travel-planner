@@ -1,8 +1,9 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { OpenAPIHono } from '@hono/zod-openapi'
+import { authSecurity, type AppEnv } from '../types'
 import { db } from '../db'
 import { trips, tripItems, destinations, insertTripSchema, insertTripItemSchema } from '../db/schema'
-import { eq, and, desc, asc } from 'drizzle-orm'
+import { eq, and, desc, asc, sql } from 'drizzle-orm'
 import { authMiddleware } from '../middleware'
 import { createTripItemSchema, reorderTripItemsSchema } from '@travel-planner/shared'
 
@@ -24,7 +25,7 @@ const tripItemWithDestinationSchema = z.object({
     suggestedDaysMin: z.number(),
     suggestedDaysMax: z.number(),
     heroImage: z.string(),
-  }),
+  }).nullable(),
 })
 
 const tripWithItemsSchema = z.object({
@@ -50,7 +51,7 @@ const errorResponseSchema = z.object({
   details: z.record(z.unknown()).optional(),
 })
 
-export const tripsRoutes = new OpenAPIHono()
+export const tripsRoutes = new OpenAPIHono<AppEnv>()
 
 // Get current user's trip (create if not exists)
 tripsRoutes.openapi(
@@ -58,9 +59,17 @@ tripsRoutes.openapi(
     method: 'get',
     path: '/trips',
     summary: 'Get current user trip with items',
-    security: [{ Bearer: [] }, { Cookie: [] }],
+    security: authSecurity,
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'User trip with destinations',
         content: {
           'application/json': {
@@ -123,7 +132,7 @@ tripsRoutes.openapi(
             region: item.destination.region ?? null,
           } : null,
         })),
-      })
+      }, 200)
     } catch (error) {
       console.error('Trip fetch error:', error)
       return c.json({ error: 'Failed to fetch trip', code: 'FETCH_FAILED' }, 500)
@@ -137,7 +146,7 @@ tripsRoutes.openapi(
     method: 'post',
     path: '/trips/items',
     summary: 'Add destination to trip',
-    security: [{ Bearer: [] }, { Cookie: [] }],
+    security: authSecurity,
     request: {
       body: {
         content: {
@@ -148,6 +157,22 @@ tripsRoutes.openapi(
       },
     },
     responses: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
+        description: 'Destination already in trip',
+        content: {
+          'application/json': {
+            schema: tripItemWithDestinationSchema,
+          },
+        },
+      },
       201: {
         description: 'Destination added to trip',
         content: {
@@ -239,7 +264,7 @@ tripsRoutes.openapi(
             ...destination,
             region: destination.region ?? null,
           },
-        })
+        }, 200)
       }
       
       // Get next position
@@ -290,14 +315,22 @@ tripsRoutes.openapi(
     method: 'delete',
     path: '/trips/items/{destinationId}',
     summary: 'Remove destination from trip',
-    security: [{ Bearer: [] }, { Cookie: [] }],
+    security: authSecurity,
     request: {
       params: z.object({
         destinationId: z.string().uuid(),
       }),
     },
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'Destination removed from trip',
         content: {
           'application/json': {
@@ -372,7 +405,7 @@ tripsRoutes.openapi(
         .set({ updatedAt: new Date() })
         .where(eq(trips.id, trip.id))
       
-      return c.json({ success: true })
+      return c.json({ success: true }, 200)
     } catch (error) {
       console.error('Remove from trip error:', error)
       return c.json({ error: 'Failed to remove from trip', code: 'REMOVE_FAILED' }, 500)
@@ -386,7 +419,7 @@ tripsRoutes.openapi(
     method: 'patch',
     path: '/trips/reorder',
     summary: 'Reorder trip destinations',
-    security: [{ Bearer: [] }, { Cookie: [] }],
+    security: authSecurity,
     request: {
       body: {
         content: {
@@ -397,7 +430,15 @@ tripsRoutes.openapi(
       },
     },
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'Trip reordered successfully',
         content: {
           'application/json': {
@@ -415,6 +456,14 @@ tripsRoutes.openapi(
       },
       401: {
         description: 'Unauthorized',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Trip not found',
         content: {
           'application/json': {
             schema: errorResponseSchema,
@@ -445,6 +494,14 @@ tripsRoutes.openapi(
     try {
       // Use transaction for atomic reorder
       await db.transaction(async (tx) => {
+        // Positions are unique per trip, so a direct swap (0 <-> 1) would
+        // collide mid-transaction. Shift every row out of the target range
+        // first, then write the final positions.
+        await tx
+          .update(tripItems)
+          .set({ position: sql`${tripItems.position} + 100000` })
+          .where(eq(tripItems.tripId, tripId))
+
         for (const item of items) {
           await tx
             .update(tripItems)
@@ -458,7 +515,7 @@ tripsRoutes.openapi(
           .where(eq(trips.id, tripId))
       })
       
-      return c.json({ success: true })
+      return c.json({ success: true }, 200)
     } catch (error) {
       console.error('Reorder trip error:', error)
       return c.json({ error: 'Failed to reorder trip', code: 'REORDER_FAILED' }, 500)

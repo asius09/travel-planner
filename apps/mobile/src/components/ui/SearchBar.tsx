@@ -1,7 +1,7 @@
 'use client'
 
-import { TextInput, View, StyleSheet } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { TextInput, View, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 
 interface SearchBarProps {
@@ -12,37 +12,8 @@ interface SearchBarProps {
   onClear?: () => void
   autoFocus?: boolean
   style?: any
+  className?: string
 }
-
-const SearchContainer = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  background-color: ${({ theme }) => theme.colors.surface};
-  border-radius: 14px;
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  padding-horizontal: 16px;
-  gap: 12px;
-  ${({ style }) => style}
-`
-
-const SearchIcon = styled(Ionicons)`
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const StyledInput = styled(TextInput).attrs({
-  placeholderTextColor: '#777F78',
-})`
-  flex: 1;
-  font-family: Geist_Regular;
-  font-size: 16px;
-  color: ${({ theme }) => theme.colors.text};
-  padding-vertical: 14px;
-`
-
-const ClearButton = styled(Pressable)`
-  padding: 4px;
-`
 
 export function SearchBar({ 
   placeholder = 'Search places, regions, or experiences', 
@@ -51,24 +22,27 @@ export function SearchBar({
   onSubmit, 
   onClear,
   autoFocus = false,
-  style 
+  style,
+  className = '',
 }: SearchBarProps) {
   return (
-    <SearchContainer style={style}>
-      <SearchIcon name="search" size={22} />
-      <StyledInput
+    <View className={`flex-row items-center bg-surface rounded-[14px] border border-border px-4 gap-3 ${className}`} style={style}>
+      <Ionicons name="search" size={22} color="#777F78" />
+      <TextInput
+        className="flex-1 font-sans text-base text-text py-3.5"
         placeholder={placeholder}
+        placeholderTextColor="#777F78"
         value={value}
         onChangeText={onChangeText}
-        onSubmitEditing={onSubmit}
+        onSubmitEditing={onSubmit ? () => onSubmit(value) : undefined}
         autoFocus={autoFocus}
         clearButtonMode="never"
       />
-      {value && (
-        <ClearButton onPress={onClear} accessibilityLabel="Clear search">
+      {value ? (
+        <Pressable onPress={onClear} accessibilityLabel="Clear search" className="p-1">
           <Ionicons name="close-circle" size={22} color="#777F78" />
-        </ClearButton>
-      )}
-    </SearchContainer>
+        </Pressable>
+      ) : null}
+    </View>
   )
 }

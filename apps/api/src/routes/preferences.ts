@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { OpenAPIHono } from '@hono/zod-openapi'
+import { authSecurity, type AppEnv } from '../types'
 import { db } from '../db'
 import { userPreferences, insertUserPreferencesSchema } from '../db/schema'
 import { eq } from 'drizzle-orm'
@@ -23,7 +24,7 @@ const errorResponseSchema = z.object({
   details: z.record(z.unknown()).optional(),
 })
 
-export const preferencesRoutes = new OpenAPIHono()
+export const preferencesRoutes = new OpenAPIHono<AppEnv>()
 
 // Get current user preferences
 preferencesRoutes.openapi(
@@ -31,9 +32,17 @@ preferencesRoutes.openapi(
     method: 'get',
     path: '/preferences',
     summary: 'Get current user preferences',
-    security: [{ Bearer: [] }, { Cookie: [] }],
+    security: authSecurity,
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'User preferences',
         content: {
           'application/json': {
@@ -65,14 +74,14 @@ preferencesRoutes.openapi(
       })
       
       if (!prefs) {
-        return c.json(null)
+        return c.json(null, 200)
       }
       
       return c.json({
         ...prefs,
         regionCode: prefs.regionCode ?? null,
         updatedAt: prefs.updatedAt.toISOString(),
-      })
+      }, 200)
     } catch (error) {
       console.error('Preferences fetch error:', error)
       return c.json({ error: 'Failed to fetch preferences', code: 'FETCH_FAILED' }, 500)
@@ -86,7 +95,7 @@ preferencesRoutes.openapi(
     method: 'put',
     path: '/preferences',
     summary: 'Create or update user preferences',
-    security: [{ Bearer: [] }, { Cookie: [] }],
+    security: authSecurity,
     request: {
       body: {
         content: {
@@ -97,7 +106,15 @@ preferencesRoutes.openapi(
       },
     },
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'Preferences updated',
         content: {
           'application/json': {
@@ -162,7 +179,7 @@ preferencesRoutes.openapi(
         ...prefs,
         regionCode: prefs.regionCode ?? null,
         updatedAt: prefs.updatedAt.toISOString(),
-      })
+      }, 200)
     } catch (error) {
       console.error('Preferences update error:', error)
       return c.json({ error: 'Failed to update preferences', code: 'UPDATE_FAILED' }, 500)

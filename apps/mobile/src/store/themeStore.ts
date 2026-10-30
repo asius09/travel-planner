@@ -58,6 +58,5 @@ export const useThemeStore = create<ThemeState>()(
   )
 )
 
-// Helper to get theme tokens
 export const getThemeTokens = (theme: TravelMood): ThemeTokens => moodThemes[theme]
 export const moodThemesList = Object.keys(moodThemes) as TravelMood[]

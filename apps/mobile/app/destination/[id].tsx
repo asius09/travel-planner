@@ -1,168 +1,18 @@
 'use client'
 
-import { View, Text, StyleSheet, ScrollView, ImageBackground, Alert } from 'react-native'
+import React from 'react'
+import { View, Text, Alert, Pressable, StyleSheet } from 'react-native'
+import { Image } from 'expo-image'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
-import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
-import { Button, EmptyState, ErrorState } from '@/components/ui'
+import { Button, ErrorState } from '@/components/ui'
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
 import { useTripStore } from '@/store/tripStore'
 import { formatCurrency } from '@travel-planner/shared'
 import type { Destination } from '@travel-planner/shared'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
-
-const Container = styled(View)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.canvas};
-`
-
-const HeroSection = styled(View)`
-  position: relative;
-  height: 360px;
-`
-
-const HeroImage = styled(ImageBackground)`
-  flex: 1;
-`
-
-const HeroOverlay = styled(View)`
-  flex: 1;
-  background-color: rgba(32, 40, 34, 0.4);
-  padding: 16px;
-  justify-content: space-between;
-`
-
-const BackButton = styled(Pressable)`
-  width: 44px;
-  height: 44px;
-  border-radius: 22px;
-  background-color: rgba(255, 255, 255, 0.9);
-  align-items: center;
-  justify-content: center;
-  align-self: flex-start;
-`
-
-const SaveButton = styled(Pressable)`
-  width: 44px;
-  height: 44px;
-  border-radius: 22px;
-  background-color: rgba(255, 255, 255, 0.9);
-  align-items: center;
-  justify-content: center;
-  align-self: flex-end;
-`
-
-const Content = styled(View)`
-  padding: 24px 20px;
-  gap: 20px;
-`
-
-const LocationText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const TitleText = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 28px;
-  line-height: 34px;
-  letter-spacing: -0.5px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const DescriptionText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 16px;
-  line-height: 24px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const HighlightsContainer = styled(View)`
-  gap: 12px;
-`
-
-const HighlightRow = styled(View)`
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 12px;
-`
-
-const HighlightIcon = styled(View)`
-  width: 28px;
-  height: 28px;
-  border-radius: 14px;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ theme }) => theme.colors.soft};
-  margin-top: 2px;
-`
-
-const HighlightText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.text};
-  line-height: 22px;
-  flex: 1;
-`
-
-const MetaGrid = styled(View)`
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-vertical: 8px;
-  border-top-width: 1px;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-`
-
-const MetaItem = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 140px;
-`
-
-const MetaLabel = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const MetaValue = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const CostSection = styled(View)`
-  gap: 8px;
-  padding-top: 8px;
-`
-
-const CostLabel = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const CostValue = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 24px;
-  color: ${({ theme }) => theme.colors.text};
-`
-
-const CostBasis = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
-const ActionButton = styled(Button).attrs({ fullWidth: true, size: 'lg' })`
-  margin-top: 8px;
-`
 
 async function fetchDestination(id: string): Promise<Destination> {
   const response = await fetch(`${API_URL}/destinations/${id}`)
@@ -193,14 +43,16 @@ async function addToTripApi(destinationId: string) {
 export default function DestinationDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { isInTrip, addDestination, removeDestination } = useTripStore()
+  const { isInTrip, addDestination } = useTripStore()
   
-  const { data: destination, isLoading, isError, error } = useQuery({
+  const { data: destination, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['destination', id],
     queryFn: () => fetchDestination(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
   })
+
+  useRefreshOnFocus(refetch)
   
   const addedToTrip = id ? isInTrip(id) : false
   
@@ -210,7 +62,6 @@ export default function DestinationDetailScreen() {
     try {
       const wasAdded = addDestination(id)
       if (wasAdded) {
-        // Also sync to server if authenticated
         try {
           await addToTripApi(id)
         } catch (apiError) {
@@ -218,10 +69,9 @@ export default function DestinationDetailScreen() {
         }
         router.push('/(tabs)/trip')
       } else {
-        // Already in trip - navigate to trip
         router.push('/(tabs)/trip')
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to add to trip. Please try again.')
     }
   }
@@ -232,48 +82,48 @@ export default function DestinationDetailScreen() {
 
   if (isLoading) {
     return (
-      <Container>
-        <HeroSection>
-          <HeroImage source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=1600&fit=crop' }} style={styles.heroImage} resizeMode="cover">
-            <HeroOverlay>
-              <BackButton onPress={handleBack} accessibilityLabel="Back">
+      <View className="flex-1 bg-canvas">
+        <View className="relative h-[360px]">
+          <View className="flex-1 relative">
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=1600&fit=crop' }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <View className="flex-1 bg-[#202822]/40 p-4 justify-between">
+              <Pressable onPress={handleBack} accessibilityLabel="Back" className="w-11 h-11 rounded-full bg-white/90 items-center justify-center self-start">
                 <Ionicons name="chevron-back" size={24} color="#202822" />
-              </BackButton>
-            </HeroOverlay>
-          </HeroImage>
-        </HeroSection>
-        <Content>
-          <View style={styles.skeletonContainer}>
-            {[1,2,3,4].map((_, i) => (
-              <View key={i} style={styles.skeletonLine} />
-            ))}
+              </Pressable>
+            </View>
           </View>
-        </Content>
-      </Container>
+        </View>
+        <View className="p-6 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} className="h-5 rounded-full bg-border" />
+          ))}
+        </View>
+      </View>
     )
   }
   
   if (isError || !destination) {
     const isNotFound = error instanceof Error && error.message === 'NOT_FOUND'
     return (
-      <Container>
-        <HeroSection>
-          <HeroImage source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=1600&fit=crop' }} style={styles.heroImage} resizeMode="cover">
-            <HeroOverlay>
-              <BackButton onPress={handleBack} accessibilityLabel="Back">
+      <View className="flex-1 bg-canvas">
+        <View className="relative h-[360px]">
+          <View className="flex-1 relative">
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=1600&fit=crop' }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <View className="flex-1 bg-[#202822]/40 p-4 justify-between">
+              <Pressable onPress={handleBack} accessibilityLabel="Back" className="w-11 h-11 rounded-full bg-white/90 items-center justify-center self-start">
                 <Ionicons name="chevron-back" size={24} color="#202822" />
-              </BackButton>
-            </HeroOverlay>
-          </HeroImage>
-        </HeroSection>
-        <Content>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+        <View className="p-6">
           <ErrorState
             title={isNotFound ? 'Destination not found' : 'Something went wrong'}
             message={isNotFound ? 'This destination does not exist or has been removed.' : 'Unable to load destination details. Please try again.'}
             onRetry={() => router.replace('/(tabs)/explore')}
           />
-        </Content>
-      </Container>
+        </View>
+      </View>
     )
   }
 
@@ -281,95 +131,79 @@ export default function DestinationDetailScreen() {
   const costBasis = destination.costCurrency === 'USD' ? 'Estimated per person for trip (USD)' : `Estimated per person for trip (${destination.costCurrency})`
 
   return (
-    <Container>
-      <HeroSection>
-        <HeroImage source={{ uri: destination.heroImage }} style={styles.heroImage} resizeMode="cover">
-          <HeroOverlay>
-            <BackButton onPress={handleBack} accessibilityLabel="Back">
+    <View className="flex-1 bg-canvas">
+      <View className="relative h-[360px]">
+        <View className="flex-1 relative">
+          <Image source={{ uri: destination.heroImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <View className="flex-1 bg-[#202822]/40 p-4 justify-between">
+            <Pressable onPress={handleBack} accessibilityLabel="Back" className="w-11 h-11 rounded-full bg-white/90 items-center justify-center self-start">
               <Ionicons name="chevron-back" size={24} color="#202822" />
-            </BackButton>
-            <SaveButton onPress={handleAddToTrip} accessibilityLabel={addedToTrip ? 'View trip' : 'Add to trip'}>
+            </Pressable>
+            <Pressable onPress={handleAddToTrip} accessibilityLabel={addedToTrip ? 'View trip' : 'Add to trip'} className="w-11 h-11 rounded-full bg-white/90 items-center justify-center self-end">
               <Ionicons 
                 name={addedToTrip ? 'bookmark' : 'bookmark-outline'} 
                 size={24} 
                 color={addedToTrip ? '#263F35' : '#202822'} 
               />
-            </SaveButton>
-          </HeroOverlay>
-        </HeroImage>
-      </HeroSection>
+            </Pressable>
+          </View>
+        </View>
+      </View>
       
-      <Content>
+      <View className="p-6 gap-5">
         <View>
-          <LocationText>{destination.region ? `${destination.region}, ${destination.country}` : destination.country}</LocationText>
-          <TitleText>{destination.name}</TitleText>
+          <Text className="font-sans text-sm text-muted">{destination.region ? `${destination.region}, ${destination.country}` : destination.country}</Text>
+          <Text className="font-sans font-medium text-[28px] leading-[34px] tracking-tight text-text">{destination.name}</Text>
         </View>
         
-        <DescriptionText>{destination.description}</DescriptionText>
+        <Text className="font-sans text-base leading-6 text-text">{destination.description}</Text>
         
-        <View style={styles.divider} />
+        <View className="h-[1px] bg-border" />
         
-        <HighlightsContainer>
+        <View className="gap-3">
           {destination.highlights.map((highlight, index) => (
-            <HighlightRow key={index}>
-              <HighlightIcon>
+            <View key={index} className="flex-row items-start gap-3">
+              <View className="w-7 h-7 rounded-full items-center justify-center bg-soft mt-0.5">
                 <Ionicons name="checkmark" size={16} color="#263F35" />
-              </HighlightIcon>
-              <HighlightText>{highlight}</HighlightText>
-            </HighlightRow>
+              </View>
+              <Text className="font-sans text-[15px] leading-[22px] text-text flex-1">{highlight}</Text>
+            </View>
           ))}
-        </HighlightsContainer>
+        </View>
         
-        <MetaGrid>
-          <MetaItem>
+        <View className="flex-row flex-wrap gap-4 py-2 border-y border-border">
+          <View className="flex-row items-center gap-2 flex-1 min-w-[140px]">
             <Ionicons name="time-outline" size={20} color="#777F78" />
             <View>
-              <MetaLabel>Suggested duration</MetaLabel>
-              <MetaValue>{destination.suggestedDaysMin}–{destination.suggestedDaysMax} days</MetaValue>
+              <Text className="font-sans text-[13px] text-muted">Suggested duration</Text>
+              <Text className="font-sans font-medium text-[15px] text-text">{destination.suggestedDaysMin}–{destination.suggestedDaysMax} days</Text>
             </View>
-          </MetaItem>
-          <MetaItem>
+          </View>
+          <View className="flex-row items-center gap-2 flex-1 min-w-[140px]">
             <Ionicons name="star-outline" size={20} color="#777F78" />
             <View>
-              <MetaLabel>Category</MetaLabel>
-              <MetaValue>{destination.categoryTags.slice(0, 2).join(', ')}</MetaValue>
+              <Text className="font-sans text-[13px] text-muted">Category</Text>
+              <Text className="font-sans font-medium text-[15px] text-text">{destination.categoryTags.slice(0, 2).join(', ')}</Text>
             </View>
-          </MetaItem>
-        </MetaGrid>
+          </View>
+        </View>
         
-        <CostSection>
-          <CostLabel>Estimated cost</CostLabel>
-          <CostValue>{costDisplay}</CostValue>
-          <CostBasis>{costBasis}</CostBasis>
-        </CostSection>
+        <View className="gap-2 pt-2">
+          <Text className="font-sans text-[13px] text-muted">Estimated cost</Text>
+          <Text className="font-sans font-medium text-2xl text-text">{costDisplay}</Text>
+          <Text className="font-sans text-[13px] text-muted">{costBasis}</Text>
+        </View>
         
-        <ActionButton
+        <Button
           variant={addedToTrip ? 'secondary' : 'primary'}
+          size="lg"
+          fullWidth
           onPress={handleAddToTrip}
+          className="mt-2"
         >
           {addedToTrip ? 'Added to trip — View trip' : 'Add to trip'}
-        </ActionButton>
-      </Content>
-    </Container>
+        </Button>
+      </View>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  skeletonContainer: {
-    gap: 16,
-    paddingHorizontal: 20,
-  },
-  skeletonLine: {
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#E5E7DF',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7DF',
-  },
-})

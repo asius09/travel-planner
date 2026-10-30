@@ -1,44 +1,31 @@
 'use client'
 
-import { Pressable, Text, StyleSheet, PressableProps } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { Pressable, Text, PressableProps } from 'react-native'
 
 interface FilterChipProps extends PressableProps {
   label: string
   selected?: boolean
   disabled?: boolean
+  className?: string
 }
 
-const StyledChip = styled(Pressable)<FilterChipProps>`
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  padding-vertical: 8px;
-  padding-horizontal: 16px;
-  border-radius: 20px;
-  background-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.surface};
-  border-width: 1px;
-  border-color: ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.border};
-  min-width: 72px;
-`
-
-const ChipText = styled(Text)<FilterChipProps>`
-  font-family: Geist_Medium;
-  font-size: 14px;
-  color: ${({ $selected, theme }) => $selected ? '#FFFFFF' : theme.colors.text};
-`
-
-export function FilterChip({ label, selected = false, onPress, disabled = false }: FilterChipProps) {
+export function FilterChip({ label, selected = false, onPress, disabled = false, className = '', ...props }: FilterChipProps) {
   return (
-    <StyledChip
-      $selected={selected}
+    <Pressable
+      className={`flex-row items-center justify-center py-2 px-4 rounded-[20px] border min-w-[72px] ${
+        selected ? 'bg-primary border-primary' : 'bg-surface border-border'
+      } ${className}`}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
       accessibilityLabel={label}
+      {...props}
     >
-      <ChipText $selected={selected}>{label}</ChipText>
-    </StyledChip>
+      <Text className={`font-medium text-sm ${selected ? 'text-white' : 'text-text'}`}>
+        {label}
+      </Text>
+    </Pressable>
   )
 }

@@ -1,18 +1,22 @@
-'use client'
-
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { randomUUID } from 'node:crypto'
+import { bearer } from 'better-auth/plugins'
 import { db } from '../db'
+import * as schema from '../db/schema'
 import { env } from '../utils/env'
 
-// For Neon Managed Better Auth, we use the standard better-auth but configure it
-// to work with Neon's managed auth. The actual auth is handled by Neon's managed
-// auth service at NEON_AUTH_BASE_URL, but we still need better-auth for API routes
-// that create sessions, etc.
+// Better Auth is configured against the Drizzle schema directly. Our tables use
+// plural names (users, sessions, accounts, verifications) and snake_case
+// columns, so the adapter needs both the schema and `usePlural` to resolve
+// models correctly. Without them Better Auth reports "Missing tables
+// user, session, account, verification" at startup.
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
+    schema,
+    usePlural: true,
   }),
   emailAndPassword: {
     enabled: true,
@@ -28,17 +32,20 @@ export const auth = betterAuth({
       maxAge: 60 * 5, // 5 minutes
     },
   },
+  // Lets API clients authenticate with `Authorization: Bearer <session token>`.
+  plugins: [bearer()],
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: env.CORS_ORIGINS,
   advanced: {
+    // Our tables use uuid primary keys; Better Auth defaults to non-UUID ids.
+    database: {
+      generateId: () => randomUUID(),
+    },
     crossSubDomainCookies: {
       enabled: false,
     },
   },
-  // Neon Managed Better Auth handles social providers, email OTP, magic links
-  // through the Neon Auth service. We don't configure plugins here as Neon manages them.
 })
 
 export type Session = typeof auth.$Infer.Session
-export type User = typeof auth.$Infer.User

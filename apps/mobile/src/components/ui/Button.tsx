@@ -1,50 +1,40 @@
 'use client'
 
 import { Pressable, Text, StyleSheet, PressableProps } from 'react-native'
-import styled from 'styled-components/native'
 
-interface ButtonProps extends PressableProps {
+interface ButtonProps extends Omit<PressableProps, 'children'> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   fullWidth?: boolean
+  children?: React.ReactNode
 }
 
-const StyledButton = styled(Pressable)<ButtonProps>`
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  border-radius: 16px;
-  padding-vertical: ${({ size }) => size === 'sm' ? '8px' : size === 'lg' ? '16px' : '12px'};
-  padding-horizontal: ${({ size }) => size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px'};
-  width: ${({ fullWidth }) => fullWidth ? '100%' : 'auto'};
-  opacity: ${({ disabled, loading }) => disabled || loading ? 0.6 : 1};
-  background-color: ${({ variant, theme }) => {
-    switch (variant) {
-      case 'primary': return theme.colors.primary
-      case 'secondary': return theme.colors.accent
-      case 'outline': return 'transparent'
-      case 'ghost': return 'transparent'
-      default: return theme.colors.primary
-    }
-  }};
-  border-width: ${({ variant }) => variant === 'outline' ? '2px' : 0};
-  border-color: ${({ variant, theme }) => variant === 'outline' ? theme.colors.primary : 'transparent'};
-`
+const variantStyles: Record<string, string> = {
+  primary: 'bg-primary border-0',
+  secondary: 'bg-accent border-0',
+  outline: 'bg-transparent border-2 border-primary',
+  ghost: 'bg-transparent border-0',
+}
 
-const ButtonText = styled(Text)<ButtonProps>`
-  font-family: Geist_Medium;
-  font-size: ${({ size }) => size === 'sm' ? '14px' : size === 'lg' ? '18px' : '16px'};
-  color: ${({ variant, theme }) => {
-    switch (variant) {
-      case 'primary': return '#FFFFFF'
-      case 'secondary': return theme.colors.text
-      case 'outline': return theme.colors.primary
-      case 'ghost': return theme.colors.primary
-      default: return '#FFFFFF'
-    }
-  }};
-`
+const sizeStyles: Record<string, string> = {
+  sm: 'py-2 px-4',
+  md: 'py-3 px-5',
+  lg: 'py-4 px-6',
+}
+
+const variantTextStyles: Record<string, string> = {
+  primary: 'text-white',
+  secondary: 'text-text',
+  outline: 'text-primary',
+  ghost: 'text-primary',
+}
+
+const sizeTextStyles: Record<string, string> = {
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-lg',
+}
 
 export function Button({ 
   variant = 'primary', 
@@ -54,31 +44,27 @@ export function Button({
   onPress, 
   children, 
   fullWidth = false,
+  className = '',
+  style,
   ...props 
-}: ButtonProps) {
+}: ButtonProps & { className?: string }) {
   return (
-    <StyledButton
-      variant={variant}
-      size={size}
+    <Pressable
+      className={`flex-row items-center justify-center rounded-2xl ${variantStyles[variant] ?? variantStyles.primary} ${sizeStyles[size] ?? sizeStyles.md} ${fullWidth ? 'w-full' : 'self-start'} ${disabled || loading ? 'opacity-60' : 'opacity-100'} ${className}`}
       disabled={disabled || loading}
-      fullWidth={fullWidth}
       onPress={onPress}
       accessibilityState={{ disabled: disabled || loading }}
       accessibilityRole="button"
+      style={style}
       {...props}
     >
       {loading ? (
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text className="text-white font-medium">Loading...</Text>
       ) : (
-        <ButtonText variant={variant} size={size}>{children}</ButtonText>
+        <Text className={`font-medium ${variantTextStyles[variant] ?? variantTextStyles.primary} ${sizeTextStyles[size] ?? sizeTextStyles.md}`}>
+          {children}
+        </Text>
       )}
-    </StyledButton>
+    </Pressable>
   )
 }
-
-const styles = StyleSheet.create({
-  loadingText: {
-    color: '#FFFFFF',
-    fontFamily: 'Geist_Medium',
-  },
-})

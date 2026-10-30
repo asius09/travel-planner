@@ -1,84 +1,22 @@
 'use client'
 
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import React, { useState, useRef } from 'react'
+import { View, Text, ScrollView, Pressable, type TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Link } from 'expo-router'
-import { useRef } from 'react'
-import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
 
-const Container = styled(View)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.canvas};
-`
-
-const Header = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 12px;
-`
-
-const BackButton = styled(Pressable)`
-  padding: 8px;
-`
-
-const TitleText = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 26px;
-  color: ${({ theme }) => theme.colors.text};
-  margin: 24px 24px 8px;
-`
-
-const SubtitleText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-  margin: 0 24px 32px;
-`
-
-const FormContainer = styled(View)`
-  padding: 0 24px;
-  gap: 16px;
-`
-
-const Footer = styled(View)`
-  padding: 0 24px 32px;
-  gap: 16px;
-`
-
-const Divider = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  margin-vertical: 8px;
-`
-
-const DividerLine = styled(View)`
-  flex: 1;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`
-
-const DividerText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.muted};
-`
-
 export default function SignInScreen() {
   const router = useRouter()
   const { signIn, loading, error, clearError } = useAuthStore()
-  const emailRef = useRef<any>(null)
-  const passwordRef = useRef<any>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const passwordRef = useRef<React.ElementRef<typeof TextInput>>(null)
   
   const handleSignIn = async () => {
-    const email = emailRef.current?._lastNativeText ?? ''
-    const password = passwordRef.current?._lastNativeText ?? ''
     if (!email || !password) return
-    
     const success = await signIn(email, password)
     if (success) {
       router.replace('/(tabs)')
@@ -90,43 +28,63 @@ export default function SignInScreen() {
   }
 
   return (
-    <Container>
-      <Header>
-        <BackButton onPress={handleBack} accessibilityLabel="Back">
+    <View className="flex-1 bg-canvas">
+      <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
+        <Pressable onPress={handleBack} accessibilityLabel="Back" className="p-2 -ml-2">
           <Ionicons name="chevron-back" size={28} color="#202822" />
-        </BackButton>
-      </Header>
+        </Pressable>
+      </View>
       
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <TitleText>Welcome back</TitleText>
-        <SubtitleText>Sign in to keep your plans in sync.</SubtitleText>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+        <Text className="font-sans font-medium text-[26px] text-text mx-6 mt-6 mb-2">Welcome back</Text>
+        <Text className="font-sans text-[15px] text-muted mx-6 mb-8">Sign in to keep your plans in sync.</Text>
         
-        <FormContainer>
+        <View className="px-6 gap-4">
           <Input
             label="Email"
             placeholder="you@example.com"
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            ref={emailRef}
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text)
+              clearError()
+            }}
             onSubmitEditing={() => passwordRef.current?.focus()}
             error={error?.includes('email') ? error : undefined}
-            onChangeText={clearError}
           />
           <Input
+            ref={passwordRef}
             label="Password"
             placeholder="••••••••"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             autoComplete="password"
-            ref={passwordRef}
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text)
+              clearError()
+            }}
             onSubmitEditing={handleSignIn}
             error={error?.includes('password') || error?.includes('credentials') ? error : undefined}
-            onChangeText={clearError}
+            rightIcon={
+              <Pressable
+                onPress={() => setShowPassword(prev => !prev)}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#777F78"
+                />
+              </Pressable>
+            }
           />
           
-          {error && (
-            <Text style={styles.errorText}>{error}</Text>
-          )}
+          {error ? (
+            <Text className="font-sans text-xs text-[#E57373] -mt-2">{error}</Text>
+          ) : null}
           
           <Button 
             variant="primary" 
@@ -138,32 +96,19 @@ export default function SignInScreen() {
           >
             Sign in
           </Button>
-        </FormContainer>
+        </View>
       </ScrollView>
       
-      <Footer>
-        <Divider>
-          <DividerLine />
-          <DividerText>Or</DividerText>
-          <DividerLine />
-        </Divider>
+      <View className="px-6 pb-8 gap-4">
+        <View className="flex-row items-center gap-3 my-2">
+          <View className="flex-1 h-[1px] bg-border" />
+          <Text className="font-sans text-xs text-muted">Or</Text>
+          <View className="flex-1 h-[1px] bg-border" />
+        </View>
         <Button variant="outline" size="lg" fullWidth onPress={() => router.push('/auth/signup')}>
           Create account
         </Button>
-      </Footer>
-    </Container>
+      </View>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 24,
-  },
-  errorText: {
-    fontFamily: 'Geist_Regular',
-    fontSize: 13,
-    color: '#E57373',
-    marginTop: -8,
-  },
-})

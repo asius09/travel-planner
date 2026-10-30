@@ -1,8 +1,12 @@
+import '@/polyfills'
+import '@/polyfills'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createAuthClient } from '@neondatabase/auth/client'
-import { EXPO_PUBLIC_API_URL, EXPO_PUBLIC_NEON_AUTH_BASE_URL } from '@env'
+import { createAuthClient } from '@neondatabase/auth'
+
+const NEON_AUTH_BASE_URL: string =
+  (process.env['EXPO_PUBLIC_NEON_AUTH_BASE_URL'] as string) ?? 'https://api.example.com'
 
 interface User {
   id: string
@@ -30,22 +34,22 @@ interface AuthState {
   clearError: () => void
 }
 
-const API_URL = EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
-const NEON_AUTH_BASE_URL = EXPO_PUBLIC_NEON_AUTH_BASE_URL ?? 'https://api.example.com'
-
 // Create Neon Auth client
-const neonAuth = createAuthClient({
-  baseURL: NEON_AUTH_BASE_URL,
-})
+const neonAuth = createAuthClient(NEON_AUTH_BASE_URL)
+
+/** Safely serialize a Date (or string) to an ISO string. */
+function toISOString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       session: null,
       loading: false,
       error: null,
-      
+
       signUp: async (email: string, password: string) => {
         set({ loading: true, error: null })
         try {
@@ -53,37 +57,38 @@ export const useAuthStore = create<AuthState>()(
           const result = await neonAuth.signUp.email({
             email,
             password,
+            name: '',
           })
-          
+
           if (result.error) {
             throw new Error(result.error.message)
           }
-          
+
           // Get session after sign up
           const sessionResult = await neonAuth.getSession()
-          
+
           if (sessionResult.data?.session) {
             const session = sessionResult.data.session
             const user = sessionResult.data.user
-            
+
             set({
               user: {
                 id: user.id,
                 email: user.email,
-                name: user.name,
+                name: user.name ?? null,
                 emailVerified: user.emailVerified,
-                createdAt: user.createdAt,
+                createdAt: toISOString(user.createdAt),
               },
               session: {
                 id: session.id,
                 token: session.token,
-                expiresAt: session.expiresAt,
+                expiresAt: toISOString(session.expiresAt),
               },
               loading: false,
             })
             return true
           }
-          
+
           throw new Error('Failed to get session after sign up')
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Sign up failed'
@@ -91,45 +96,44 @@ export const useAuthStore = create<AuthState>()(
           return false
         }
       },
-      
+
       signIn: async (email: string, password: string) => {
         set({ loading: true, error: null })
         try {
-          // Use Neon Auth client for sign in
           const result = await neonAuth.signIn.email({
             email,
             password,
           })
-          
+
           if (result.error) {
             throw new Error(result.error.message)
           }
-          
+
           // Get session after sign in
           const sessionResult = await neonAuth.getSession()
-          
+
           if (sessionResult.data?.session) {
             const session = sessionResult.data.session
             const user = sessionResult.data.user
-            
+
             set({
               user: {
                 id: user.id,
                 email: user.email,
-                name: user.name,
+                name: user.name ?? null,
                 emailVerified: user.emailVerified,
-                createdAt: user.createdAt,
+                createdAt: toISOString(user.createdAt),
               },
               session: {
                 id: session.id,
                 token: session.token,
-                expiresAt: session.expiresAt,
+                expiresAt: toISOString(session.expiresAt),
               },
               loading: false,
             })
             return true
           }
-          
+
           throw new Error('Failed to get session after sign in')
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Sign in failed'
@@ -137,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
           return false
         }
       },
-      
+
       signOut: async () => {
         try {
           await neonAuth.signOut()
@@ -146,27 +150,27 @@ export const useAuthStore = create<AuthState>()(
         }
         set({ user: null, session: null })
       },
-      
+
       restoreSession: async () => {
         try {
           const sessionResult = await neonAuth.getSession()
-          
+
           if (sessionResult.data?.session) {
             const session = sessionResult.data.session
             const user = sessionResult.data.user
-            
+
             set({
               user: {
                 id: user.id,
                 email: user.email,
-                name: user.name,
+                name: user.name ?? null,
                 emailVerified: user.emailVerified,
-                createdAt: user.createdAt,
+                createdAt: toISOString(user.createdAt),
               },
               session: {
                 id: session.id,
                 token: session.token,
-                expiresAt: session.expiresAt,
+                expiresAt: toISOString(session.expiresAt),
               },
             })
           } else {
@@ -177,13 +181,13 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, session: null })
         }
       },
-      
+
       clearError: () => set({ error: null }),
     }),
     {
       name: 'travel-planner-auth',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ user: state.user, session: state.session }),
-    }
-  )
+    },
+  ),
 )

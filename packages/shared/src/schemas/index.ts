@@ -79,6 +79,7 @@ export const searchParamsSchema = z.object({
 export const signUpSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
+  name: z.string().min(1).max(255).optional(),
 })
 
 export const signInSchema = z.object({

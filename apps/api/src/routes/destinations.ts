@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { OpenAPIHono } from '@hono/zod-openapi'
+import type { AppEnv } from '../types'
 import { db } from '../db'
 import { destinations, insertDestinationSchema } from '../db/schema'
 import { eq, and, ilike, or, inArray, desc, sql } from 'drizzle-orm'
@@ -42,7 +43,7 @@ const errorResponseSchema = z.object({
   details: z.record(z.unknown()).optional(),
 })
 
-export const destinationsRoutes = new OpenAPIHono()
+export const destinationsRoutes = new OpenAPIHono<AppEnv>()
 
 // Get all destinations with search and filters
 destinationsRoutes.openapi(
@@ -54,7 +55,15 @@ destinationsRoutes.openapi(
       query: searchParamsSchema,
     },
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'Paginated list of destinations',
         content: {
           'application/json': {
@@ -124,7 +133,7 @@ destinationsRoutes.openapi(
         page,
         pageSize,
         hasMore: offset + items.length < Number(count),
-      })
+      }, 200)
     } catch (error) {
       console.error('Destinations list error:', error)
       return c.json({ error: 'Failed to fetch destinations', code: 'FETCH_FAILED' }, 500)
@@ -144,7 +153,15 @@ destinationsRoutes.openapi(
       }),
     },
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'Destination details',
         content: {
           'application/json': {
@@ -181,7 +198,7 @@ destinationsRoutes.openapi(
         imageCredit: destination.imageCredit ?? null,
         createdAt: destination.createdAt.toISOString(),
         updatedAt: destination.updatedAt.toISOString(),
-      })
+      }, 200)
     } catch (error) {
       console.error('Destination fetch error:', error)
       return c.json({ error: 'Failed to fetch destination', code: 'FETCH_FAILED' }, 500)
@@ -204,7 +221,15 @@ destinationsRoutes.openapi(
       }),
     },
     responses: {
-      200: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+            200: {
         description: 'Destinations for mood',
         content: {
           'application/json': {
@@ -235,7 +260,7 @@ destinationsRoutes.openapi(
         imageCredit: item.imageCredit ?? null,
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
-      })))
+      })), 200)
     } catch (error) {
       console.error('Mood destinations error:', error)
       return c.json({ error: 'Failed to fetch destinations', code: 'FETCH_FAILED' }, 500)

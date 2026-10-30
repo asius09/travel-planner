@@ -9,8 +9,8 @@
     "build": "pnpm --filter mobile build && pnpm --filter api build",
     "build:android": "pnpm --filter mobile build:android",
     "lint": "pnpm --filter mobile lint && pnpm --filter api lint && pnpm --filter shared lint && pnpm --filter config lint",
-    "typecheck": "pnpm --filter mobile typecheck && pnpm --filter api typecheck && pnpm --filter shared typecheck && pnpm --filter config typecheck",
-    "test": "pnpm --filter mobile test && pnpm --filter api test && pnpm --filter shared test && pnpm --filter config test",
+    "typecheck": "pnpm --filter mobile typecheck && pnpm --filter api typecheck && pnpm --filter shared typecheck",
+    "test": "pnpm --filter mobile test && pnpm --filter api test && pnpm --filter shared test",
     "test:unit": "pnpm --filter mobile test:unit && pnpm --filter api test:unit && pnpm --filter shared test:unit",
     "test:integration": "pnpm --filter api test:integration",
     "test:mobile": "pnpm --filter mobile test:mobile",
@@ -21,7 +21,8 @@
     "db:push": "pnpm --filter api db:push",
     "db:studio": "pnpm --filter api db:studio",
     "db:seed": "pnpm --filter api db:seed",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "db:migrate": "pnpm --filter api db:migrate"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

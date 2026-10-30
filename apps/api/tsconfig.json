@@ -16,9 +16,9 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist",
-    "rootDir": ".",
     "baseUrl": ".",
     "paths": {
+      "@travel-planner/shared": ["../../packages/shared/src/index.ts"],
       "@travel-planner/shared/*": ["../../packages/shared/src/*"],
       "@travel-planner/api/*": ["src/*"]
     }

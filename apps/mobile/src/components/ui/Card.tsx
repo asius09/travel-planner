@@ -1,64 +1,49 @@
 'use client'
 
-import { View, StyleSheet, ViewProps } from 'react-native'
-import styled from 'styled-components/native'
+import React from 'react'
+import { View, ViewProps, Pressable } from 'react-native'
 
 interface CardProps extends ViewProps {
   children: React.ReactNode
   onPress?: () => void
   pressable?: boolean
+  className?: string
 }
 
-const StyledCard = styled(View)`
-  background-color: ${({ theme }) => theme.colors.surface};
-  border-radius: 20px;
-  border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  overflow: hidden;
-`
-
-const PressableCard = styled(StyledCard).attrs({ pressable: true })``
-
-export function Card({ children, style, onPress, pressable = false, ...props }: CardProps) {
-  const Component = pressable ? PressableCard : StyledCard
+export function Card({ children, style, className = '', onPress, pressable = false, ...props }: CardProps) {
+  if (pressable) {
+    return (
+      <Pressable
+        className={`bg-surface rounded-[20px] border border-border overflow-hidden ${className}`}
+        style={style}
+        onPress={onPress}
+        accessibilityRole="button"
+        {...props}
+      >
+        {children}
+      </Pressable>
+    )
+  }
   
   return (
-    <Component
+    <View
+      className={`bg-surface rounded-[20px] border border-border overflow-hidden ${className}`}
       style={style}
-      onPress={onPress}
-      accessibilityRole={pressable ? 'button' : undefined}
-      accessibilityState={{ disabled: !pressable }}
       {...props}
     >
       {children}
-    </Component>
+    </View>
   )
 }
 
-export function CardHeader({ children, style }: { children: React.ReactNode; style?: any }) {
-  return <View style={[styles.header, style]}>{children}</View>
+export function CardHeader({ children, style, className = '' }: { children: React.ReactNode; style?: any; className?: string }) {
+  return <View className={`p-4 border-b border-border ${className}`} style={style}>{children}</View>
 }
 
-export function CardContent({ children, style }: { children: React.ReactNode; style?: any }) {
-  return <View style={[styles.content, style]}>{children}</View>
+export function CardContent({ children, style, className = '' }: { children: React.ReactNode; style?: any; className?: string }) {
+  return <View className={`p-4 ${className}`} style={style}>{children}</View>
 }
 
-export function CardFooter({ children, style }: { children: React.ReactNode; style?: any }) {
-  return <View style={[styles.footer, style]}>{children}</View>
+export function CardFooter({ children, style, className = '' }: { children: React.ReactNode; style?: any; className?: string }) {
+  return <View className={`p-4 border-t border-border ${className}`} style={style}>{children}</View>
 }
-
-const styles = StyleSheet.create({
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7DF',
-  },
-  content: {
-    padding: 16,
-  },
-  footer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7DF',
-  },
-})

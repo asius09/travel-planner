@@ -1,65 +1,12 @@
 'use client'
 
-import { View, Text, StyleSheet, ScrollView } from 'react-native'
+import React from 'react'
+import { View, Text, ScrollView, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
-import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, ProgressIndicator, OnboardingOption } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { TRAVEL_PARTY_OPTIONS } from '@/constants/onboarding'
-
-const Container = styled(View)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.canvas};
-`
-
-const Header = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 12px;
-`
-
-const BackButton = styled(Pressable)`
-  padding: 8px;
-`
-
-const TitleText = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 26px;
-  color: ${({ theme }) => theme.colors.text};
-  margin-top: 8px;
-  margin-bottom: 4px;
-`
-
-const SubtitleText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-  margin-bottom: 24px;
-`
-
-const OptionsContainer = styled(View)`
-  flex: 1;
-  padding: 0 24px 24px;
-  gap: 12px;
-`
-
-const Footer = styled(View)`
-  padding: 0 24px 32px;
-  gap: 12px;
-`
-
-const SkipText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-  text-align: center;
-`
-
-const SkipButton = styled(Pressable)`
-  padding: 8px;
-`
 
 export default function TravelPartyOnboardingScreen() {
   const router = useRouter()
@@ -86,21 +33,25 @@ export default function TravelPartyOnboardingScreen() {
   }
 
   return (
-    <Container>
-      <Header>
-        <BackButton onPress={handleBack} accessibilityLabel="Back">
+    <View className="flex-1 bg-canvas">
+      <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
+        <Pressable onPress={handleBack} accessibilityLabel="Back" className="p-2 -ml-2">
           <Ionicons name="chevron-back" size={28} color="#202822" />
-        </BackButton>
-      </Header>
+        </Pressable>
+      </View>
       
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <ProgressIndicator currentStep={4} totalSteps={5} style={styles.progress} />
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ProgressIndicator currentStep={4} totalSteps={5} className="px-6 mb-2" />
         
-        <View style={styles.contentPadding}>
-          <TitleText>WhoWho's going with youapos;s going with you?</TitleText>
-          <SubtitleText>This helps us suggest destinations suited to your group.</SubtitleText>
+        <View className="pb-6">
+          <Text className="font-sans font-medium text-[26px] text-text mx-6 mt-2 mb-1">
+            Who's going with you?
+          </Text>
+          <Text className="font-sans text-[15px] text-muted mx-6 mb-6">
+            Solo journeys, family escapes, and group trips need different things.
+          </Text>
           
-          <OptionsContainer>
+          <View className="px-6 gap-3">
             {TRAVEL_PARTY_OPTIONS.map((option) => (
               <OnboardingOption
                 key={option.value}
@@ -110,11 +61,11 @@ export default function TravelPartyOnboardingScreen() {
                 onPress={() => handleSelectParty(option.value)}
               />
             ))}
-          </OptionsContainer>
+          </View>
         </View>
       </ScrollView>
       
-      <Footer>
+      <View className="px-6 pb-8 gap-3">
         <Button 
           variant="primary" 
           size="lg" 
@@ -124,23 +75,10 @@ export default function TravelPartyOnboardingScreen() {
         >
           Continue
         </Button>
-        <SkipButton onPress={handleSkip} accessibilityLabel="Skip this question">
-          <SkipText>Skip for now</SkipText>
-        </SkipButton>
-      </Footer>
-    </Container>
+        <Pressable onPress={handleSkip} accessibilityLabel="Skip this question" className="p-2 items-center">
+          <Text className="font-sans text-[15px] text-muted text-center">Skip for now</Text>
+        </Pressable>
+      </View>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-  },
-  contentPadding: {
-    paddingBottom: 24,
-  },
-  progress: {
-    paddingHorizontal: 24,
-    marginBottom: 8,
-  },
-})

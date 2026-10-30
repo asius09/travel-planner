@@ -13,10 +13,9 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
-      "@travel-planner/shared/*": ["packages/shared/src/*"],
-      "@travel-planner/config/*": ["packages/config/src/*"]
+      "@travel-planner/shared/*": ["./packages/shared/src/*"],
+      "@travel-planner/config/*": ["./packages/config/src/*"]
     }
   },
   "exclude": ["node_modules", "**/dist", "**/build", ".expo"]

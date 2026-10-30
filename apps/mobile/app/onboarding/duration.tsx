@@ -1,65 +1,12 @@
 'use client'
 
-import { View, Text, StyleSheet, ScrollView } from 'react-native'
+import React from 'react'
+import { View, Text, ScrollView, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
-import styled from 'styled-components/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, ProgressIndicator, OnboardingOption } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { DURATION_OPTIONS } from '@/constants/onboarding'
-
-const Container = styled(View)`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.canvas};
-`
-
-const Header = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 12px;
-`
-
-const BackButton = styled(Pressable)`
-  padding: 8px;
-`
-
-const TitleText = styled(Text)`
-  font-family: Geist_Medium;
-  font-size: 26px;
-  color: ${({ theme }) => theme.colors.text};
-  margin-top: 8px;
-  margin-bottom: 4px;
-`
-
-const SubtitleText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-  margin-bottom: 24px;
-`
-
-const OptionsContainer = styled(View)`
-  flex: 1;
-  padding: 0 24px 24px;
-  gap: 12px;
-`
-
-const Footer = styled(View)`
-  padding: 0 24px 32px;
-  gap: 12px;
-`
-
-const SkipText = styled(Text)`
-  font-family: Geist_Regular;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.muted};
-  text-align: center;
-`
-
-const SkipButton = styled(Pressable)`
-  padding: 8px;
-`
 
 export default function DurationOnboardingScreen() {
   const router = useRouter()
@@ -84,21 +31,25 @@ export default function DurationOnboardingScreen() {
   }
 
   return (
-    <Container>
-      <Header>
-        <BackButton onPress={handleBack} accessibilityLabel="Back">
+    <View className="flex-1 bg-canvas">
+      <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
+        <Pressable onPress={handleBack} accessibilityLabel="Back" className="p-2 -ml-2">
           <Ionicons name="chevron-back" size={28} color="#202822" />
-        </BackButton>
-      </Header>
+        </Pressable>
+      </View>
       
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <ProgressIndicator currentStep={2} totalSteps={5} style={styles.progress} />
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ProgressIndicator currentStep={2} totalSteps={5} className="px-6 mb-2" />
         
-        <View style={styles.contentPadding}>
-          <TitleText>How long are you thinking?</TitleText>
-          <SubtitleText>Choose a rough duration so we can match destinations.</SubtitleText>
+        <View className="pb-6">
+          <Text className="font-sans font-medium text-[26px] text-text mx-6 mt-2 mb-1">
+            How long are you thinking?
+          </Text>
+          <Text className="font-sans text-[15px] text-muted mx-6 mb-6">
+            Choose a rough duration so we can match destinations.
+          </Text>
           
-          <OptionsContainer>
+          <View className="px-6 gap-3">
             {DURATION_OPTIONS.map((option) => (
               <OnboardingOption
                 key={option.value}
@@ -108,11 +59,11 @@ export default function DurationOnboardingScreen() {
                 onPress={() => handleSelectDuration(option.value)}
               />
             ))}
-          </OptionsContainer>
+          </View>
         </View>
       </ScrollView>
       
-      <Footer>
+      <View className="px-6 pb-8 gap-3">
         <Button 
           variant="primary" 
           size="lg" 
@@ -122,23 +73,10 @@ export default function DurationOnboardingScreen() {
         >
           Continue
         </Button>
-        <SkipButton onPress={handleSkip} accessibilityLabel="Skip this question">
-          <SkipText>Skip for now</SkipText>
-        </SkipButton>
-      </Footer>
-    </Container>
+        <Pressable onPress={handleSkip} accessibilityLabel="Skip this question" className="p-2 items-center">
+          <Text className="font-sans text-[15px] text-muted text-center">Skip for now</Text>
+        </Pressable>
+      </View>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-  },
-  contentPadding: {
-    paddingBottom: 24,
-  },
-  progress: {
-    paddingHorizontal: 24,
-    marginBottom: 8,
-  },
-})
