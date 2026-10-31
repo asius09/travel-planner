@@ -13,8 +13,8 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, EmptyTripState, ItineraryRow, ScreenFade } from '@/components/ui'
 import { useTripStore } from '@/store/tripStore'
+import { useTripSync } from '@/hooks/useTripSync'
 import { useThemeStore } from '@/store/themeStore'
-import { FALLBACK_DESTINATIONS } from '@/constants/destinations'
 import { formatCurrency } from '@travel-planner/shared'
 import { api } from '@/services/api'
 import * as Haptics from 'expo-haptics'
@@ -24,21 +24,16 @@ export default function TripScreen() {
   const insets = useSafeAreaInsets()
   const { tokens } = useThemeStore()
   const { destinations: tripDestinations, removeDestination, reorderDestinations } = useTripStore()
+  const trip = useTripSync()
   const [isNearBottom, setIsNearBottom] = useState(false)
 
-  // Enriched destinations
-  const enrichedDestinations = tripDestinations.map((item) => {
-    let dest = item.destination
-    if (!dest || !dest.name) {
-      dest = FALLBACK_DESTINATIONS.find((d) => d.id === item.destinationId)
-    }
-    return {
-      ...item,
-      resolvedDestination: dest || {},
-    }
-  })
+  // The store mirrors the server trip (reconciled by useTripSync) and carries
+  // optimistic updates; server destinations always include the full payload.
+  const enrichedDestinations = tripDestinations.map((item) => ({
+    ...item,
+    resolvedDestination: item.destination ?? {},
+  }))
 
-  // Derived budget calculation
   const totalCostMinor = enrichedDestinations.reduce((total, item) => {
     return total + (item.resolvedDestination?.estimatedCostMinor ?? 0)
   }, 0)
@@ -61,11 +56,15 @@ export default function TripScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
+            // Optimistic removal with rollback if the server rejects it.
+            const previous = useTripStore.getState().destinations
             removeDestination(destinationId)
             try {
               await api.removeTripItem(destinationId)
+              trip.invalidate()
             } catch {
-              // Local state updated
+              useTripStore.getState().setDestinations(previous)
+              Alert.alert('Could not remove', 'Please check your connection and try again.')
             }
           },
         },
@@ -73,44 +72,30 @@ export default function TripScreen() {
     )
   }
 
-  const handleMoveUp = (index: number) => {
-    if (index > 0) {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      } catch {
-        // Ignore
-      }
-      reorderDestinations(index, index - 1)
-      syncReorder(index, index - 1)
-    }
-  }
-
-  const handleMoveDown = (index: number) => {
-    if (index < tripDestinations.length - 1) {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      } catch {
-        // Ignore
-      }
-      reorderDestinations(index, index + 1)
-      syncReorder(index, index + 1)
-    }
-  }
-
-  const syncReorder = async (from: number, to: number) => {
+  const handleMove = (from: number, to: number) => {
+    if (to < 0 || to > tripDestinations.length - 1) return
     try {
-      const reordered = [...tripDestinations]
-      const [moved] = reordered.splice(from, 1)
-      reordered.splice(to, 0, moved)
-      await api.reorderTrip(
-        reordered.map((item, idx) => ({
-          destinationId: item.destinationId,
-          position: idx,
-        }))
-      )
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     } catch {
-      // Local state is already updated
+      // Ignore
     }
+    const previous = useTripStore.getState().destinations
+    reorderDestinations(from, to)
+    void (async () => {
+      try {
+        const reordered = useTripStore.getState().destinations
+        await api.reorderTrip(
+          reordered.map((item, idx) => ({
+            destinationId: item.destinationId,
+            position: idx,
+          }))
+        )
+        trip.invalidate()
+      } catch {
+        // Roll back to the last server-confirmed order.
+        useTripStore.getState().setDestinations(previous)
+      }
+    })()
   }
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -123,9 +108,9 @@ export default function TripScreen() {
 
   if (destinationCount === 0) {
     return (
-      <View key="trip-empty" style={{ paddingTop: insets.top }} className="flex-1 bg-canvas">
+      <View key="trip-empty" style={{ paddingTop: insets.top }} className="flex-1 bg-background">
         <View className="px-5 pt-4 pb-2">
-          <Text className="font-sans font-medium text-[28px] text-text tracking-tight">
+          <Text className="font-sans font-medium text-[28px] text-foreground tracking-tight">
             Your trip, taking shape.
           </Text>
         </View>
@@ -135,10 +120,10 @@ export default function TripScreen() {
   }
 
   return (
-    <View key="trip-populated" style={{ paddingTop: insets.top }} className="flex-1 bg-canvas">
+    <View key="trip-populated" style={{ paddingTop: insets.top }} className="flex-1 bg-background">
       {/* Page Title */}
       <View className="px-5 pt-4 pb-2">
-        <Text className="font-sans font-medium text-[28px] text-text tracking-tight">
+        <Text className="font-sans font-medium text-[28px] text-foreground tracking-tight">
           Your trip, taking shape.
         </Text>
       </View>
@@ -158,11 +143,11 @@ export default function TripScreen() {
         ListHeaderComponent={
           <View className="gap-4 mb-2">
             {/* Bento-style Budget & Trip Summary Card */}
-            <View className="bg-surface rounded-[24px] border border-border p-5 gap-4">
+            <View className="bg-card rounded-[24px] border border-border p-5 gap-4">
               <View className="flex-row items-center justify-between">
-                <Text className="font-sans text-[14px] text-muted">Destinations saved</Text>
-                <View className="bg-canvas px-3 py-1 rounded-full border border-border">
-                  <Text className="font-sans font-medium text-[13px] text-text">
+                <Text className="font-sans text-[14px] text-muted-foreground">Destinations saved</Text>
+                <View className="bg-surface-muted px-3 py-1 rounded-full border border-border">
+                  <Text className="font-sans font-medium text-[13px] text-foreground">
                     {destinationCount} {destinationCount === 1 ? 'place' : 'places'}
                   </Text>
                 </View>
@@ -170,8 +155,8 @@ export default function TripScreen() {
 
               <View className="pt-3 border-t border-border flex-row items-baseline justify-between">
                 <View>
-                  <Text className="font-sans text-[13px] text-muted">Total estimated budget</Text>
-                  <Text className="font-sans text-[11px] text-muted mt-0.5">
+                  <Text className="font-sans text-[13px] text-muted-foreground">Total estimated budget</Text>
+                  <Text className="font-sans text-[11px] text-muted-foreground mt-0.5">
                     Derived estimate • USD
                   </Text>
                 </View>
@@ -186,8 +171,8 @@ export default function TripScreen() {
 
             {/* List Heading */}
             <View className="flex-row items-baseline justify-between px-1 pt-1">
-              <Text className="font-sans font-medium text-[18px] text-text">Itinerary stops</Text>
-              <Text className="font-sans text-xs text-muted">Use arrows to reorder</Text>
+              <Text className="font-sans font-medium text-[18px] text-foreground">Itinerary stops</Text>
+              <Text className="font-sans text-xs text-muted-foreground">Use arrows to reorder</Text>
             </View>
           </View>
         }
@@ -197,8 +182,8 @@ export default function TripScreen() {
             destination={item.resolvedDestination}
             onPress={() => router.push(`/destination/${item.destinationId}`)}
             onRemove={() => handleRemove(item.destinationId, item.resolvedDestination?.name)}
-            onMoveUp={() => handleMoveUp(index)}
-            onMoveDown={() => handleMoveDown(index)}
+            onMoveUp={() => handleMove(index, index - 1)}
+            onMoveDown={() => handleMove(index, index + 1)}
             canMoveUp={index > 0}
             canMoveDown={index < destinationCount - 1}
           />

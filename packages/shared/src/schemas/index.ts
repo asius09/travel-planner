@@ -7,13 +7,41 @@ export const travelPartySchema = z.enum(['solo', 'couple', 'friends', 'family'])
 
 export const userPreferencesSchema = z.object({
   userId: z.string().uuid(),
-  travelMood: travelMoodSchema,
-  duration: durationSchema,
-  budget: budgetSchema,
-  travelParty: travelPartySchema,
+  travelMood: travelMoodSchema.nullable(),
+  duration: durationSchema.nullable(),
+  budget: budgetSchema.nullable(),
+  travelParty: travelPartySchema.nullable(),
   currency: z.string().length(3),
-  regionCode: z.string().length(2).optional(),
+  regionCode: z.string().length(2).nullable(),
+  onboardingCompleted: z.boolean(),
+  onboardingFlowVersion: z.number().int().positive(),
   updatedAt: z.string().datetime(),
+})
+
+/**
+ * Partial onboarding/preference answers accepted by the update endpoints.
+ * Each onboarding step persists only the field it collects, so every field is
+ * optional; the server never requires all answers until completion.
+ */
+export const userPreferencesUpdateSchema = z
+  .object({
+    travelMood: travelMoodSchema.optional(),
+    duration: durationSchema.optional(),
+    budget: budgetSchema.optional(),
+    travelParty: travelPartySchema.optional(),
+    currency: z.string().length(3).optional(),
+    regionCode: z.string().length(2).nullable().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one preference field is required',
+  })
+
+/** One entry of a destination's ordered image collection. */
+export const destinationImageSchema = z.object({
+  id: z.string().uuid(),
+  url: z.string().url(),
+  alt: z.string().nullable(),
+  position: z.number().int().nonnegative(),
 })
 
 export const destinationSchema = z.object({
@@ -36,6 +64,8 @@ export const destinationSchema = z.object({
   imageCredit: z.string().optional(),
   isPublished: z.boolean(),
   popularity: z.number().int().nonnegative(),
+  /** Ordered image collection served by the API; fixtures may omit it. */
+  images: z.array(destinationImageSchema).optional(),
 })
 
 export const tripSchema = z.object({
@@ -93,6 +123,8 @@ export type Duration = z.infer<typeof durationSchema>
 export type Budget = z.infer<typeof budgetSchema>
 export type TravelParty = z.infer<typeof travelPartySchema>
 export type UserPreferences = z.infer<typeof userPreferencesSchema>
+export type UserPreferencesUpdate = z.infer<typeof userPreferencesUpdateSchema>
+export type DestinationImage = z.infer<typeof destinationImageSchema>
 export type Destination = z.infer<typeof destinationSchema>
 export type Trip = z.infer<typeof tripSchema>
 export type TripItem = z.infer<typeof tripItemSchema>

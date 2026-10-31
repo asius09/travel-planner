@@ -1,12 +1,30 @@
-import { FALLBACK_DESTINATIONS } from '@/constants/destinations'
-import type { Destination, UserPreferences, TravelMood, Duration, Budget, TravelParty } from '@travel-planner/shared'
+import {
+  destinationSchema,
+  userPreferencesSchema,
+  type Destination,
+  type UserPreferences,
+  type TravelMood,
+  type Duration,
+  type Budget,
+  type TravelParty,
+} from '@travel-planner/shared'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
 let _authTokenProvider: (() => string | undefined) | null = null
+let _unauthorizedHandler: (() => void) | null = null
 
 export function registerAuthTokenProvider(provider: () => string | undefined) {
   _authTokenProvider = provider
+}
+
+/**
+ * Called whenever the server rejects the current session with 401 so the auth
+ * store can clear stale local credentials and the navigation guard can route
+ * the user back to login without a redirect loop.
+ */
+export function registerUnauthorizedHandler(handler: (() => void) | null) {
+  _unauthorizedHandler = handler
 }
 
 function getSessionToken(): string | undefined {
@@ -43,16 +61,12 @@ export function getApiBaseUrl(): string {
   return envUrl || 'http://localhost:3001'
 }
 
-function getApiUrl(): string {
-  return getApiBaseUrl()
-}
-
 const API_URL = getApiBaseUrl()
 
 async function safeFetch(pathOrUrl: string, init?: RequestInit): Promise<Response> {
   const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${getApiBaseUrl()}${pathOrUrl}`
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 6000)
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
   try {
     const res = await fetch(url, {
       ...init,
@@ -91,6 +105,30 @@ function getHeaders(token?: string | null): Record<string, string> {
   return headers
 }
 
+/** Extracts the server error message from a failed JSON response. */
+async function toApiError(res: Response, fallback: string): Promise<Error> {
+  try {
+    const data = (await res.json()) as { error?: string }
+    return new Error(data.error ?? fallback)
+  } catch {
+    return new Error(fallback)
+  }
+}
+
+/**
+ * Handles non-success responses uniformly: 401 triggers the registered
+ * unauthorized handler (session invalidation), everything else throws a
+ * descriptive error for the loading/error states to present.
+ */
+async function assertOk(res: Response, fallback: string): Promise<void> {
+  if (res.ok) return
+  if (res.status === 401) {
+    _unauthorizedHandler?.()
+    throw new Error('Your session has expired. Please sign in again.')
+  }
+  throw await toApiError(res, fallback)
+}
+
 export interface DestinationsResponse {
   data: Destination[]
   total: number
@@ -115,6 +153,15 @@ export interface TripWithItems {
   createdAt: string
   updatedAt: string
   items: TripItemWithDestination[]
+}
+
+/** Validates a destination payload at the API boundary before it reaches the UI. */
+function parseDestination(payload: unknown): Destination {
+  const result = destinationSchema.safeParse(payload)
+  if (!result.success) {
+    throw new Error('Received an invalid destination from the server.')
+  }
+  return result.data
 }
 
 export const api = {
@@ -160,7 +207,16 @@ export const api = {
     const res = await safeFetch(`${API_URL}/auth/session`, {
       headers: getHeaders(),
     })
-    if (!res.ok) return null
+    if (res.status === 401) {
+      // The server explicitly rejected the stored session.
+      _unauthorizedHandler?.()
+      return { user: null, session: null }
+    }
+    if (!res.ok) {
+      // Network or server trouble: signal "unknown" so callers can keep the
+      // cached session instead of treating it as invalid.
+      return null
+    }
     return res.json()
   },
 
@@ -171,63 +227,36 @@ export const api = {
     page?: number
     pageSize?: number
   }): Promise<DestinationsResponse> {
-    try {
-      const query = new URLSearchParams()
-      if (params.query) query.set('query', params.query)
-      if (params.mood && params.mood !== 'all') query.set('mood', params.mood)
-      query.set('page', (params.page ?? 1).toString())
-      query.set('pageSize', (params.pageSize ?? 20).toString())
+    const query = new URLSearchParams()
+    if (params.query) query.set('query', params.query)
+    if (params.mood && params.mood !== 'all') query.set('mood', params.mood)
+    query.set('page', (params.page ?? 1).toString())
+    query.set('pageSize', (params.pageSize ?? 20).toString())
 
-      const res = await safeFetch(`${API_URL}/destinations?${query.toString()}`)
-      if (res.ok) {
-        return await res.json()
-      }
-    } catch {
-      // Fall through to offline mock data
-    }
+    const res = await safeFetch(`${API_URL}/destinations?${query.toString()}`)
+    await assertOk(res, 'Failed to fetch destinations')
 
-    // Offline / fallback data filter
-    let list = [...FALLBACK_DESTINATIONS]
-    if (params.mood && params.mood !== 'all') {
-      const targetMood = params.mood as TravelMood
-      list = list.filter((d) => d.moodTags.includes(targetMood))
+    const payload = (await res.json()) as { data?: unknown[]; total?: number; page?: number; pageSize?: number; hasMore?: boolean }
+    if (!payload || !Array.isArray(payload.data)) {
+      throw new Error('Received an invalid destinations list from the server.')
     }
-    if (params.query) {
-      const q = params.query.toLowerCase()
-      list = list.filter(
-        (d) =>
-          d.name.toLowerCase().includes(q) ||
-          d.country.toLowerCase().includes(q) ||
-          d.categoryTags.some((t) => t.toLowerCase().includes(q))
-      )
-    }
-    const page = params.page ?? 1
-    const pageSize = params.pageSize ?? 20
-    const start = (page - 1) * pageSize
-    const paginated = list.slice(start, start + pageSize)
 
     return {
-      data: paginated,
-      total: list.length,
-      page,
-      pageSize,
-      hasMore: start + pageSize < list.length,
+      data: payload.data.map((item) => parseDestination(item)),
+      total: payload.total ?? payload.data.length,
+      page: payload.page ?? params.page ?? 1,
+      pageSize: payload.pageSize ?? params.pageSize ?? 20,
+      hasMore: payload.hasMore ?? false,
     }
   },
 
   async getDestination(id: string): Promise<Destination> {
-    try {
-      const res = await safeFetch(`${API_URL}/destinations/${id}`)
-      if (res.ok) {
-        return await res.json()
-      }
-    } catch {
-      // Fall through
+    const res = await safeFetch(`${API_URL}/destinations/${id}`)
+    if (res.status === 404) {
+      throw new Error('NOT_FOUND')
     }
-
-    const fallback = FALLBACK_DESTINATIONS.find((d) => d.id === id || d.slug === id)
-    if (fallback) return fallback
-    throw new Error('NOT_FOUND')
+    await assertOk(res, 'Failed to fetch destination')
+    return parseDestination(await res.json())
   },
 
   // Trips
@@ -235,9 +264,7 @@ export const api = {
     const res = await safeFetch(`${API_URL}/trips`, {
       headers: getHeaders(),
     })
-    if (!res.ok) {
-      throw new Error('Failed to fetch trip')
-    }
+    await assertOk(res, 'Failed to fetch trip')
     return res.json()
   },
 
@@ -247,10 +274,7 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify({ destinationId }),
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error ?? 'Failed to add to trip')
-    }
+    await assertOk(res, 'Failed to add to trip')
     return res.json()
   },
 
@@ -259,9 +283,7 @@ export const api = {
       method: 'DELETE',
       headers: getHeaders(),
     })
-    if (!res.ok) {
-      throw new Error('Failed to remove from trip')
-    }
+    await assertOk(res, 'Failed to remove from trip')
   },
 
   async reorderTrip(items: { destinationId: string; position: number }[]): Promise<void> {
@@ -270,39 +292,58 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify({ items }),
     })
-    if (!res.ok) {
-      throw new Error('Failed to reorder trip items')
-    }
+    await assertOk(res, 'Failed to reorder trip items')
   },
 
-  // Preferences
+  // Preferences & onboarding
   async getPreferences(): Promise<UserPreferences | null> {
     const res = await safeFetch(`${API_URL}/preferences`, {
       headers: getHeaders(),
     })
-    if (!res.ok) return null
-    return res.json()
+    await assertOk(res, 'Failed to fetch preferences')
+    const payload = await res.json()
+    if (payload === null || payload === undefined) return null
+    const result = userPreferencesSchema.safeParse(payload)
+    if (!result.success) {
+      throw new Error('Received invalid preferences from the server.')
+    }
+    return result.data
   },
 
-  async savePreferences(preferences: {
-    travelMood: TravelMood
-    duration: Duration
-    budget: Budget
-    travelParty: TravelParty
-    currency?: string
+  /**
+   * Persists one onboarding step's answer (or a full set). The server merges
+   * partial payloads, so each step saves independently.
+   */
+  async saveOnboardingStep(answers: {
+    travelMood?: TravelMood
+    duration?: Duration
+    budget?: Budget
+    travelParty?: TravelParty
   }): Promise<UserPreferences> {
     const res = await safeFetch(`${API_URL}/preferences`, {
       method: 'PUT',
       headers: getHeaders(),
-      body: JSON.stringify({
-        currency: 'USD',
-        ...preferences,
-      }),
+      body: JSON.stringify(answers),
     })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error ?? 'Failed to save preferences')
+    await assertOk(res, 'Failed to save your answer')
+    const result = userPreferencesSchema.safeParse(await res.json())
+    if (!result.success) {
+      throw new Error('Received invalid preferences from the server.')
     }
-    return res.json()
+    return result.data
+  },
+
+  /** Marks onboarding complete on the server. Throws when answers are missing. */
+  async completeOnboarding(): Promise<UserPreferences> {
+    const res = await safeFetch(`${API_URL}/preferences/complete`, {
+      method: 'POST',
+      headers: getHeaders(),
+    })
+    await assertOk(res, 'Failed to complete onboarding')
+    const result = userPreferencesSchema.safeParse(await res.json())
+    if (!result.success) {
+      throw new Error('Received invalid preferences from the server.')
+    }
+    return result.data
   },
 }

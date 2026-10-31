@@ -149,7 +149,7 @@ export default function LocationPermissionScreen() {
           {/* Map-inspired surface with a central pin and a restrained radius */}
           <Animated.View
             style={{ opacity: surfaceOpacity }}
-            className="items-center justify-center overflow-hidden rounded-card border border-border bg-soft"
+            className="items-center justify-center overflow-hidden rounded-card border border-border bg-secondary"
           >
             <View style={{ width: tileSize, height: tileHeight }}>
               {/* Discovery radius rings */}
@@ -187,7 +187,7 @@ export default function LocationPermissionScreen() {
                   opacity: pinOpacity,
                   transform: [{ translateY: pinTranslateY }],
                 }}
-                className="h-[72px] w-[72px] items-center justify-center rounded-full border border-border bg-surface shadow-xs"
+                className="h-[72px] w-[72px] items-center justify-center rounded-full border border-border bg-card shadow-xs"
               >
                 <Ionicons name="location" size={34} color={tokens.primary} />
               </Animated.View>
@@ -195,10 +195,10 @@ export default function LocationPermissionScreen() {
           </Animated.View>
 
           {/* Supporting copy */}
-          <Text className="mt-8 max-w-[320px] text-center font-sans text-[15px] leading-6 text-muted">
+          <Text className="mt-8 max-w-[320px] text-center font-sans text-[15px] leading-6 text-muted-foreground">
             Your location helps us find relevant places nearby. You stay in control.
           </Text>
-          <Text className="mt-2.5 max-w-[300px] text-center font-sans text-[13px] text-muted">
+          <Text className="mt-2.5 max-w-[300px] text-center font-sans text-[13px] text-muted-foreground">
             Processed on-device only. Never tracked or sold.
           </Text>
         </View>

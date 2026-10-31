@@ -24,7 +24,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '$',
     label: 'Budget-friendly',
     range: '< $1,000',
-    accentColor: '#263F35',
+    accentColor: 'var(--primary)',
   },
   {
     value: 'balanced',
@@ -32,7 +32,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '$$',
     label: 'Balanced',
     range: '$1,000 – $3,000',
-    accentColor: '#D8A66A',
+    accentColor: 'var(--accent)',
   },
   {
     value: 'premium',
@@ -40,7 +40,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '$$$',
     label: 'Premium',
     range: '$3,000+',
-    accentColor: '#6B8E7D',
+    accentColor: 'var(--accent)',
   },
   {
     value: 'not-sure',
@@ -48,7 +48,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '~',
     label: 'Not sure yet',
     range: 'Flexible',
-    accentColor: '#A3B18A',
+    accentColor: 'var(--muted-foreground)',
   },
 ]
 
@@ -79,10 +79,10 @@ interface ArcSection {
 
 // 4 discrete curved sections along 180 deg upper semicircle with 10 deg gaps
 const ARC_SECTIONS: ArcSection[] = [
-  { startDeg: 180, endDeg: 142.5, color: '#263F35' }, // Budget-friendly
-  { startDeg: 132.5, endDeg: 95, color: '#D8A66A' },   // Balanced
-  { startDeg: 85, endDeg: 47.5, color: '#6B8E7D' },    // Premium
-  { startDeg: 37.5, endDeg: 0, color: '#A3B18A' },     // Flexible
+  { startDeg: 180, endDeg: 142.5, color: 'var(--primary)' },     // Budget-friendly
+  { startDeg: 132.5, endDeg: 95, color: 'var(--accent)' },       // Balanced
+  { startDeg: 85, endDeg: 47.5, color: 'var(--accent)' },        // Premium
+  { startDeg: 37.5, endDeg: 0, color: 'var(--muted-foreground)' }, // Flexible
 ]
 
 function getArcSegmentPath(
@@ -153,7 +153,7 @@ function BrandSemicircleGauge({
               key={`track-${idx}`}
               d={path}
               fill="none"
-              stroke="#E5E7DF"
+              stroke="var(--border)"
               strokeWidth={ARC_STROKE}
               strokeLinecap="round"
               opacity={0.7}
@@ -198,13 +198,13 @@ function BrandSemicircleGauge({
           }}
           pointerEvents="none"
         >
-          <Text className="font-sans text-[13px] text-muted font-medium mb-1">
+          <Text className="font-sans text-[13px] text-muted-foreground font-medium mb-1">
             Target budget
           </Text>
 
           {/* Main Range Display with Smooth Morph */}
           <TextMorph
-            className="font-sans font-medium text-[32px] text-text text-center tracking-tight leading-9"
+            className="font-sans font-medium text-[32px] text-foreground text-center tracking-tight leading-9"
             duration={75}
           >
             {currentTier.range}
@@ -265,7 +265,7 @@ export default function BudgetOnboardingScreen() {
             orientation="vertical"
             variant="labels-only"
             itemHeight={52}
-            fadeColor="#F8F6EF"
+            fadeColor="var(--background)"
           />
         </View>
       </View>

@@ -18,14 +18,14 @@ export function SkeletonCard({ style, className = '' }: { style?: StyleProp<View
   }, [opacity])
 
   return (
-    <View className={`bg-surface rounded-[20px] border border-border overflow-hidden ${className}`} style={style}>
-      <Animated.View className="h-[180px] w-full bg-border" style={{ opacity }} />
+    <View className={`bg-card rounded-[20px] border border-border overflow-hidden ${className}`} style={style}>
+      <Animated.View className="h-[180px] w-full bg-skeleton" style={{ opacity }} />
       <View className="p-3.5 gap-2.5">
-        <Animated.View className="h-4 rounded-lg bg-border w-3/5" style={{ opacity }} />
-        <Animated.View className="h-4 rounded-lg bg-border w-2/5" style={{ opacity }} />
+        <Animated.View className="h-4 rounded-lg bg-skeleton w-3/5" style={{ opacity }} />
+        <Animated.View className="h-4 rounded-lg bg-skeleton w-2/5" style={{ opacity }} />
         <View className="flex-row gap-4 mt-1">
-          <Animated.View className="h-3.5 w-20 rounded-[7px] bg-border" style={{ opacity }} />
-          <Animated.View className="h-3.5 w-20 rounded-[7px] bg-border" style={{ opacity }} />
+          <Animated.View className="h-3.5 w-20 rounded-[7px] bg-skeleton" style={{ opacity }} />
+          <Animated.View className="h-3.5 w-20 rounded-[7px] bg-skeleton" style={{ opacity }} />
         </View>
       </View>
     </View>

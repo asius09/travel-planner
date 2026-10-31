@@ -4,6 +4,7 @@ import React from 'react'
 import {
   View,
   Text,
+  ScrollView,
   Pressable,
   StyleSheet,
   type StyleProp,
@@ -17,6 +18,7 @@ import { formatCurrency } from '@travel-planner/shared'
 import { useTripStore } from '@/store/tripStore'
 import * as Haptics from 'expo-haptics'
 import type { Destination } from '@travel-planner/shared'
+import { semanticColors } from '@/theme/colors'
 
 interface DestinationCardProps {
   destination: Destination
@@ -80,9 +82,9 @@ export function DestinationCard({
         style={style}
         accessibilityRole="button"
         accessibilityLabel={`${destination.name}, ${destination.country}`}
-        className={`bg-surface rounded-[22px] border border-border p-3.5 flex-row items-center gap-3.5 active:opacity-90 ${className}`}
+        className={`bg-card rounded-[22px] border border-border p-3.5 flex-row items-center gap-3.5 active:opacity-90 ${className}`}
       >
-        <View className="w-20 h-20 rounded-[16px] overflow-hidden relative bg-[#EAECE4]">
+        <View className="w-20 h-20 rounded-[16px] overflow-hidden relative bg-surface-muted">
           <ExpoImage
             source={{ uri: destination.heroImage }}
             style={StyleSheet.absoluteFill}
@@ -93,18 +95,18 @@ export function DestinationCard({
         </View>
 
         <View className="flex-1 min-w-0 justify-center">
-          <Text className="font-sans text-[12px] text-muted leading-tight" numberOfLines={1}>
+          <Text className="font-sans text-[12px] text-muted-foreground leading-tight" numberOfLines={1}>
             {location}
           </Text>
-          <Text className="font-sans font-medium text-[16px] text-text mt-0.5 leading-snug" numberOfLines={1}>
+          <Text className="font-sans font-medium text-[16px] text-card-foreground mt-0.5 leading-snug" numberOfLines={1}>
             {destination.name}
           </Text>
           <View className="flex-row items-center gap-2 mt-1">
             <Text className="font-sans font-semibold text-[14px] text-primary">
               {costDisplay}
             </Text>
-            <Text className="text-muted text-xs">•</Text>
-            <Text className="font-sans text-xs text-muted">
+            <Text className="text-muted-foreground text-xs">•</Text>
+            <Text className="font-sans text-xs text-muted-foreground">
               {destination.suggestedDaysMin}–{destination.suggestedDaysMax}d
             </Text>
           </View>
@@ -116,13 +118,13 @@ export function DestinationCard({
           accessibilityLabel={isSaved ? 'Remove from trip' : 'Save to trip'}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           className={`w-9 h-9 rounded-full items-center justify-center ${
-            isSaved ? 'bg-[#D4F638]' : 'bg-surface border border-border'
+            isSaved ? 'bg-accent' : 'bg-surface border border-border'
           }`}
         >
           <Ionicons
             name={isSaved ? 'bookmark' : 'bookmark-outline'}
             size={16}
-            color={isSaved ? '#121614' : '#202822'}
+            color={isSaved ? semanticColors.accentForeground : semanticColors.foreground}
           />
         </Pressable>
       </Pressable>
@@ -134,7 +136,7 @@ export function DestinationCard({
     <Pressable
       onPress={onPress}
       style={style}
-      className={`relative h-[250px] rounded-[28px] overflow-hidden bg-[#E7E9DF] border border-border/80 active:opacity-95 ${className}`}
+      className={`relative h-[250px] rounded-[28px] overflow-hidden bg-surface-muted border border-border/80 active:opacity-95 ${className}`}
       accessibilityRole="button"
       accessibilityLabel={`${destination.name}, ${location}`}
     >
@@ -163,7 +165,7 @@ export function DestinationCard({
       <View className="absolute top-3.5 left-3.5 right-3.5 flex-row items-center justify-between z-10">
         <View className="flex-row items-center gap-1.5">
           <View className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-white/40">
-            <Text className="font-sans text-[11px] text-[#121614] font-semibold capitalize">
+            <Text className="font-sans text-[11px] text-primary font-semibold capitalize">
               {destination.categoryTags[0] || 'Explore'}
             </Text>
           </View>
@@ -181,13 +183,13 @@ export function DestinationCard({
           accessibilityLabel={isSaved ? 'Remove from trip' : 'Save to trip'}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           className={`w-9 h-9 rounded-full items-center justify-center border border-white/30 ${
-            isSaved ? 'bg-[#D4F638]' : 'bg-white/90 backdrop-blur-md'
+            isSaved ? 'bg-accent' : 'bg-white/90 backdrop-blur-md'
           }`}
         >
           <Ionicons
             name={isSaved ? 'bookmark' : 'bookmark-outline'}
             size={16}
-            color="#121614"
+            color={isSaved ? semanticColors.accentForeground : semanticColors.ink900}
           />
         </Pressable>
       </View>
@@ -195,7 +197,7 @@ export function DestinationCard({
       {/* Bottom Overlaid Information */}
       <View className="flex-1 justify-end p-5">
         <View className="flex-row items-center gap-1 mb-0.5">
-          <Ionicons name="location-outline" size={13} color="#D4F638" />
+          <Ionicons name="location-outline" size={13} color={semanticColors.accent} />
           <Text className="font-sans text-[12.5px] text-white/90 leading-tight" numberOfLines={1}>
             {location}
           </Text>
@@ -211,7 +213,7 @@ export function DestinationCard({
         {/* Bottom Actions & Cost Row */}
         <View className="flex-row items-center justify-between mt-2.5 pt-2 border-t border-white/20">
           <View className="flex-row items-baseline gap-1">
-            <Text className="font-sans font-bold text-[16.5px] text-[#D4F638] leading-tight">
+            <Text className="font-sans font-bold text-[16.5px] text-accent leading-tight">
               {costDisplay}
             </Text>
             <Text className="font-sans text-[11px] text-white/70">
@@ -227,16 +229,16 @@ export function DestinationCard({
             className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full ${
               isSaved
                 ? 'bg-white/20 border border-white/30'
-                : 'bg-[#D4F638]'
+                : 'bg-accent'
             }`}
           >
             <Ionicons
               name={isSaved ? 'checkmark' : 'add'}
               size={14}
-              color={isSaved ? '#FFFFFF' : '#121614'}
+              color={isSaved ? semanticColors.white : semanticColors.accentForeground}
             />
             <Text
-              style={{ color: isSaved ? '#FFFFFF' : '#121614' }}
+              style={{ color: isSaved ? semanticColors.white : semanticColors.accentForeground }}
               className="font-sans font-semibold text-[12px]"
             >
               {isSaved ? 'Saved' : 'Add to trip'}

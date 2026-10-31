@@ -5,13 +5,23 @@ export type TravelParty = 'solo' | 'couple' | 'friends' | 'family'
 
 export interface UserPreferences {
   userId: string
-  travelMood: TravelMood
-  duration: Duration
-  budget: Budget
-  travelParty: TravelParty
+  travelMood: TravelMood | null
+  duration: Duration | null
+  budget: Budget | null
+  travelParty: TravelParty | null
   currency: string
-  regionCode?: string
+  regionCode?: string | null
+  onboardingCompleted: boolean
+  onboardingFlowVersion: number
   updatedAt: string
+}
+
+/** A single entry of a destination's ordered image collection. */
+export interface DestinationImage {
+  id: string
+  url: string
+  alt?: string | null
+  position: number
 }
 
 export interface Destination {
@@ -34,6 +44,7 @@ export interface Destination {
   imageCredit?: string
   isPublished: boolean
   popularity: number
+  images?: DestinationImage[]
 }
 
 export interface Trip {

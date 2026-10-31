@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Pressable,
   StyleSheet,
   Share,
+  Alert,
+  useWindowDimensions,
 } from 'react-native'
 import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated'
 import { Image as ExpoImage } from 'expo-image'
@@ -20,21 +22,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ErrorState, ScreenFade } from '@/components/ui'
 import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
 import { useTripStore } from '@/store/tripStore'
+import { useTripSync } from '@/hooks/useTripSync'
 import { useThemeStore } from '@/store/themeStore'
 import { api } from '@/services/api'
-import { getDestinationGallery } from '@/services/destinationImages'
+import { getDestinationGallery, hasCompleteGallery } from '@/services/destinationImages'
 import { formatCurrency } from '@travel-planner/shared'
 import * as Haptics from 'expo-haptics'
+import { semanticColors } from '@/theme/colors'
 
 export default function DestinationDetailScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { width: screenWidth } = useWindowDimensions()
   const { isInTrip, addDestination, removeDestination } = useTripStore()
   const { tokens } = useThemeStore()
   const shouldReduceMotion = useReducedMotion()
+  const trip = useTripSync()
 
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [failedImages, setFailedImages] = useState<Record<string, true>>({})
+  const heroScrollRef = useRef<ScrollView>(null)
 
   const {
     data: destination,
@@ -47,15 +55,31 @@ export default function DestinationDetailScreen() {
     queryFn: () => api.getDestination(id!),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   })
 
   useRefreshOnFocus(refetch)
 
   const addedToTrip = id ? isInTrip(id) : false
 
-  // Multi-image gallery list with at least 5 distinct images
+  // Ordered image collection straight from the API. Incomplete records
+  // (< 5 images) are flagged for remediation and rendered with what exists.
   const gallery = destination ? getDestinationGallery(destination) : []
   const activeImage = gallery[activeImageIndex] || destination?.heroImage || ''
+
+  useEffect(() => {
+    setActiveImageIndex(0)
+    setFailedImages({})
+  }, [id])
+
+  useEffect(() => {
+    if (destination && !hasCompleteGallery(destination)) {
+      console.warn(
+        `[destination] "${destination.slug}" has an incomplete image collection ` +
+          `(${gallery.length}/5). Flag for remediation in the destination seed.`
+      )
+    }
+  }, [destination, gallery.length])
 
   const handleSelectThumbnail = (index: number) => {
     try {
@@ -64,6 +88,20 @@ export default function DestinationDetailScreen() {
       // Ignore
     }
     setActiveImageIndex(index)
+    // Keep the swipeable hero in sync with the tapped thumbnail.
+    heroScrollRef.current?.scrollTo({ x: index * screenWidth, animated: !shouldReduceMotion })
+  }
+
+  const handleHeroScrollEnd = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
+    if (screenWidth <= 0) return
+    const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth)
+    if (index >= 0 && index < gallery.length && index !== activeImageIndex) {
+      setActiveImageIndex(index)
+    }
+  }
+
+  const handleImageError = (url: string) => {
+    setFailedImages((prev) => (prev[url] ? prev : { ...prev, [url]: true }))
   }
 
   const handleToggleTrip = async () => {
@@ -80,11 +118,15 @@ export default function DestinationDetailScreen() {
       return
     }
 
+    const previous = useTripStore.getState().destinations
     addDestination(id, destination)
     try {
       await api.addTripItem(id)
+      trip.invalidate()
     } catch {
-      // Local state already updated
+      // Roll back the optimistic update so local state matches the server.
+      useTripStore.getState().setDestinations(previous)
+      Alert.alert('Could not save', 'Adding to your trip failed. Please try again.')
     }
   }
 
@@ -97,19 +139,23 @@ export default function DestinationDetailScreen() {
       // Ignore
     }
 
+    const previous = useTripStore.getState().destinations
     if (addedToTrip) {
       removeDestination(id)
       try {
         await api.removeTripItem(id)
+        trip.invalidate()
       } catch {
-        // Ignore
+        useTripStore.getState().setDestinations(previous)
       }
     } else {
       addDestination(id, destination)
       try {
         await api.addTripItem(id)
+        trip.invalidate()
       } catch {
-        // Ignore
+        useTripStore.getState().setDestinations(previous)
+        Alert.alert('Could not save', 'Saving this place failed. Please try again.')
       }
     }
   }
@@ -142,7 +188,7 @@ export default function DestinationDetailScreen() {
 
   if (isLoading) {
     return (
-      <View key="dest-loading" className="flex-1 bg-canvas">
+      <View key="dest-loading" className="flex-1 bg-background">
         <View className="relative h-[380px] rounded-b-[36px] bg-border overflow-hidden" style={{ opacity: 0.5 }} />
         <View className="p-6 gap-4">
           <View className="h-5 w-28 rounded-full bg-border" />
@@ -157,15 +203,15 @@ export default function DestinationDetailScreen() {
   if (isError || !destination) {
     const isNotFound = error instanceof Error && error.message === 'NOT_FOUND'
     return (
-      <View key="dest-error" style={{ paddingTop: insets.top }} className="flex-1 bg-canvas">
+      <View key="dest-error" style={{ paddingTop: insets.top }} className="flex-1 bg-background">
         <View className="px-5 pt-3">
           <Pressable
             onPress={handleBack}
             accessibilityRole="button"
             accessibilityLabel="Back"
-            className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center active:opacity-70"
+            className="w-11 h-11 rounded-full bg-card border border-border items-center justify-center active:opacity-70"
           >
-            <Ionicons name="chevron-back" size={22} color="#202822" />
+            <Ionicons name="chevron-back" size={22} color={semanticColors.foreground} />
           </Pressable>
         </View>
         <View className="p-6 flex-1 justify-center">
@@ -193,7 +239,7 @@ export default function DestinationDetailScreen() {
     : destination.country
 
   return (
-    <View key="dest-content" className="flex-1 bg-canvas">
+    <View key="dest-content" className="flex-1 bg-background">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 130 }}
@@ -201,7 +247,7 @@ export default function DestinationDetailScreen() {
         {/* 1. Large Immersive Hero with Rounded Bottom Corners (Matching Reference Design) */}
         <Animated.View
           entering={shouldReduceMotion ? undefined : FadeIn.duration(280)}
-          className="relative h-[410px] w-full rounded-b-[36px] overflow-hidden bg-[#EAECE4]"
+          className="relative h-[410px] w-full rounded-b-[36px] overflow-hidden bg-surface-muted"
         >
           <ExpoImage
             key={activeImage}
@@ -236,7 +282,7 @@ export default function DestinationDetailScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/25 items-center justify-center active:opacity-75"
             >
-              <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={22} color={semanticColors.white} />
             </Pressable>
 
             <Pressable
@@ -251,7 +297,7 @@ export default function DestinationDetailScreen() {
               <Ionicons
                 name={addedToTrip ? 'bookmark' : 'bookmark-outline'}
                 size={20}
-                color="#FFFFFF"
+                color={semanticColors.white}
               />
             </Pressable>
           </View>
@@ -284,7 +330,7 @@ export default function DestinationDetailScreen() {
             entering={shouldReduceMotion ? undefined : FadeInDown.duration(280).delay(60)}
             className="mt-4 px-5"
           >
-            <View className="bg-surface rounded-[24px] p-3 border border-border">
+            <View className="bg-card rounded-[24px] p-3 border border-border">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -307,7 +353,7 @@ export default function DestinationDetailScreen() {
                         overflow: 'hidden',
                         transform: [{ scale: isSelected ? 1.02 : 1 }],
                       }}
-                      className="bg-canvas active:opacity-85"
+                      className="bg-surface-muted active:opacity-85"
                     >
                       <ExpoImage
                         source={{ uri: imgUrl }}
@@ -331,53 +377,53 @@ export default function DestinationDetailScreen() {
         >
           {/* Quick Travel Badges (using semantic tokens) */}
           <View className="flex-row gap-2.5">
-            <View className="flex-1 bg-surface rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
-              <View className="w-7 h-7 rounded-full bg-soft items-center justify-center">
+            <View className="flex-1 bg-card rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
+              <View className="w-7 h-7 rounded-full bg-secondary items-center justify-center">
                 <Ionicons name="time-outline" size={15} color={tokens.primary} />
               </View>
               <View className="flex-1 min-w-0">
-                <Text className="font-sans font-medium text-[12.5px] text-text" numberOfLines={1}>
+                <Text className="font-sans font-medium text-[12.5px] text-foreground" numberOfLines={1}>
                   {destination.suggestedDaysMin}–{destination.suggestedDaysMax}d
                 </Text>
-                <Text className="font-sans text-[10.5px] text-muted">Duration</Text>
+                <Text className="font-sans text-[10.5px] text-muted-foreground">Duration</Text>
               </View>
             </View>
 
-            <View className="flex-1 bg-surface rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
-              <View className="w-7 h-7 rounded-full bg-soft items-center justify-center">
+            <View className="flex-1 bg-card rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
+              <View className="w-7 h-7 rounded-full bg-secondary items-center justify-center">
                 <Ionicons name="compass-outline" size={15} color={tokens.primary} />
               </View>
               <View className="flex-1 min-w-0">
                 <Text
-                  className="font-sans font-medium text-[12.5px] text-text capitalize"
+                  className="font-sans font-medium text-[12.5px] text-foreground capitalize"
                   numberOfLines={1}
                 >
                   {destination.categoryTags[0] || 'Explore'}
                 </Text>
-                <Text className="font-sans text-[10.5px] text-muted">Category</Text>
+                <Text className="font-sans text-[10.5px] text-muted-foreground">Category</Text>
               </View>
             </View>
 
-            <View className="flex-1 bg-surface rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
-              <View className="w-7 h-7 rounded-full bg-soft items-center justify-center">
+            <View className="flex-1 bg-card rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
+              <View className="w-7 h-7 rounded-full bg-secondary items-center justify-center">
                 <Ionicons name="star-outline" size={14} color={tokens.primary} />
               </View>
               <View className="flex-1 min-w-0">
-                <Text className="font-sans font-medium text-[12.5px] text-text" numberOfLines={1}>
+                <Text className="font-sans font-medium text-[12.5px] text-foreground" numberOfLines={1}>
                   {destination.popularity ? `${destination.popularity}%` : '4.9★'}
                 </Text>
-                <Text className="font-sans text-[10.5px] text-muted">Rating</Text>
+                <Text className="font-sans text-[10.5px] text-muted-foreground">Rating</Text>
               </View>
             </View>
           </View>
 
           {/* About Travel Section */}
-          <View className="bg-surface rounded-[24px] border border-border p-5 gap-2">
-            <Text className="font-sans font-medium text-[19px] text-text tracking-tight">
+          <View className="bg-card rounded-[24px] border border-border p-5 gap-2">
+            <Text className="font-sans font-medium text-[19px] text-foreground tracking-tight">
               About travel
             </Text>
             <Text
-              className="font-sans text-[14.5px] leading-[23px] text-text"
+              className="font-sans text-[14.5px] leading-[23px] text-foreground"
               style={{ opacity: 0.88 }}
             >
               {destination.description}
@@ -385,19 +431,19 @@ export default function DestinationDetailScreen() {
           </View>
 
           {/* Highlights & Attractions */}
-          <View className="bg-surface rounded-[24px] border border-border p-5 gap-3.5">
-            <Text className="font-sans font-medium text-[18px] text-text">
+          <View className="bg-card rounded-[24px] border border-border p-5 gap-3.5">
+            <Text className="font-sans font-medium text-[18px] text-foreground">
               Highlights & attractions
             </Text>
             <View className="gap-2.5">
               {destination.highlights.map((highlight, index) => (
                 <View key={index} className="flex-row items-start gap-3">
                   <View
-                    className="w-5 h-5 rounded-full bg-soft items-center justify-center mt-0.5"
+                    className="w-5 h-5 rounded-full bg-secondary items-center justify-center mt-0.5"
                   >
                     <Ionicons name="checkmark" size={13} color={tokens.primary} />
                   </View>
-                  <Text className="font-sans text-[14px] leading-[21px] text-text flex-1">
+                  <Text className="font-sans text-[14px] leading-[21px] text-foreground flex-1">
                     {highlight}
                   </Text>
                 </View>
@@ -406,15 +452,15 @@ export default function DestinationDetailScreen() {
           </View>
 
           {/* Estimated Budget Card with Clear Disclaimer */}
-          <View className="bg-surface rounded-[24px] border border-border p-5 gap-2">
-            <Text className="font-sans text-[12px] text-muted">Estimated budget basis</Text>
+          <View className="bg-card rounded-[24px] border border-border p-5 gap-2">
+            <Text className="font-sans text-[12px] text-muted-foreground">Estimated budget basis</Text>
             <Text
               style={{ color: tokens.primary }}
               className="font-sans font-medium text-[28px] tracking-tight leading-none mt-1"
             >
               {costDisplay}
             </Text>
-            <Text className="font-sans text-xs text-muted mt-1 leading-relaxed">
+            <Text className="font-sans text-xs text-muted-foreground mt-1 leading-relaxed">
               Derived estimate per person based on mid-tier accommodations, meals, and local transport. Outta is designed for thoughtful discovery and trip planning; estimates reflect realistic travel costs and not direct booking fees.
             </Text>
           </View>
@@ -430,7 +476,7 @@ export default function DestinationDetailScreen() {
         style={{
           paddingBottom: Math.max(insets.bottom, 16),
           overflow: 'hidden',
-          backgroundColor: 'rgba(247, 246, 240, 0.94)',
+          backgroundColor: 'rgba(246, 244, 239, 0.94)',
         }}
         className="absolute bottom-0 left-0 right-0 px-5 pt-3 border-t border-border flex-row items-center gap-3.5 z-30"
       >
@@ -441,7 +487,7 @@ export default function DestinationDetailScreen() {
           onPress={handleShare}
           accessibilityRole="button"
           accessibilityLabel="Share destination"
-          className="w-12 h-12 rounded-full bg-surface border border-border items-center justify-center active:opacity-75"
+          className="w-12 h-12 rounded-full bg-card border border-border items-center justify-center active:opacity-75"
         >
           <Ionicons name="share-outline" size={20} color={tokens.primary} />
         </Pressable>
@@ -452,11 +498,11 @@ export default function DestinationDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel={addedToTrip ? 'Saved in trip • View itinerary' : 'Add to trip'}
           className={`flex-1 h-12 rounded-full items-center justify-center active:opacity-90 ${
-            addedToTrip ? 'bg-soft border border-border' : 'bg-primary'
+            addedToTrip ? 'bg-secondary border border-border' : 'bg-primary'
           }`}
         >
           <Text
-            style={{ color: addedToTrip ? tokens.primary : '#FFFFFF' }}
+            style={{ color: addedToTrip ? tokens.primary : semanticColors.primaryForeground }}
             className="font-sans font-medium text-[16px] tracking-tight"
           >
             {addedToTrip ? 'Saved in trip • View itinerary' : 'Add to trip'}

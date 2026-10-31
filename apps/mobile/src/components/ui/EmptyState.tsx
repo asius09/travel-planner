@@ -4,6 +4,7 @@ import React from 'react'
 import { View, Text, StyleProp, ViewStyle } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Button } from './Button'
+import { semanticColors } from '@/theme/colors'
 
 interface EmptyStateProps {
   /** Icon name from the Ionicons set rendered by `@expo/vector-icons`. */
@@ -27,11 +28,11 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View className={`flex-1 items-center justify-center p-8 gap-4 ${className}`} style={style}>
-      <View className="w-20 h-20 rounded-full items-center justify-center bg-soft">
-        <Ionicons name={icon} size={36} color="#263F35" />
+      <View className="w-20 h-20 rounded-full items-center justify-center bg-secondary">
+        <Ionicons name={icon} size={36} color={semanticColors.primary} />
       </View>
-      <Text className="font-medium text-xl text-center text-text">{title}</Text>
-      <Text className="font-normal text-[15px] text-center text-muted leading-[22px] max-w-[280px]">
+      <Text className="font-medium text-xl text-center text-foreground">{title}</Text>
+      <Text className="font-normal text-[15px] text-center text-muted-foreground leading-[22px] max-w-[280px]">
         {description}
       </Text>
       {actionLabel && onAction ? (

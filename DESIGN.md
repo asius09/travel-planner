@@ -53,29 +53,76 @@ Accessibility is not an afterthought. Every interactive element has an accessibl
 
 ---
 
-## 3. Color and Typography
+## 3. Color Architecture
 
-### Semantic Color System
-Colors are defined strictly as semantic tokens. Hardcoded hex codes are prohibited in documentation and screen implementations.
+Outta uses a **two-layer color system** defined entirely in `global.css`:
 
-| Semantic Token | Role & Visual Relationship | Usage |
+### Layer 1: Primitive Color Tokens
+Base palette colors that describe colors only. These are NOT tied to particular components. Components MUST consume semantic tokens (Layer 2), never primitive tokens directly.
+
+| Primitive Token | Value | Description |
 |---|---|---|
-| `canvas` | Base application background. Warm, neutral, low-glare tone. | Screen backgrounds, behind scrollable lists, root container views. |
-| `surface` | Elevated content surface. Crisp, flat contrast against `canvas`. | Cards, bottom sheets, form input fields, modal dialogs. |
-| `text` | Primary foreground color. High contrast against `canvas` and `surface`. | Screen titles, card titles, body copy, active icons. |
-| `muted` | Secondary foreground tone. Soft contrast against base surfaces. | Subtitles, supporting copy, metadata, placeholders, inactive icons. |
-| `border` | Structural divider tone. Subtle definition without visual noise. | Card outlines, input boundaries, divider lines, unselected chips. |
-| `mood.primary` | Active mood primary brand token. Deep, confident, and grounded. | Primary action buttons, active tab indicators, selected card borders. |
-| `mood.accent` | Active mood highlight token. High visibility against `mood.primary`. | Progress indicators, active check badges, highlight pills. |
-| `mood.soft` | Active mood tinted surface. Gentle, low-saturation wash. | Category pill fills, subtle highlight containers, active item fills. |
-| `status.error` | Urgent alert tone. Clear, distinct, non-aggressive red tone. | Destructive actions (Remove), input validation errors, alert banners. |
+| `--color-ivory-50` | `#F6F4EF` | Warm ivory base background |
+| `--color-white-0` | `#FFFFFF` | Pure white |
+| `--color-ink-900` | `#252B2D` | Deep ink for text and primary actions |
+| `--color-ink-700` | `#454B4D` | Medium ink for muted text |
+| `--color-ocean-700` | `#456779` | Deep ocean blue for focus rings and active states |
+| `--color-ocean-500` | `#64869A` | Muted ocean blue for accent highlights |
+| `--color-mist-100` | `#DCE5E7` | Light mist for secondary surfaces |
+| `--color-stone-200` | `#E7E3DB` | Stone for muted backgrounds and borders |
+| `--color-muted-500` | `#777D7D` | Muted gray for secondary text |
+| `--color-success-700` | `#286749` | Success green |
+| `--color-warning-800` | `#795000` | Warning amber |
+| `--color-danger-700` | `#B42318` | Destructive red |
+
+### Layer 2: Semantic Color Tokens
+Semantic tokens reference primitive tokens. Components MUST use these semantic tokens via NativeWind utilities (e.g., `bg-background`, `text-foreground`, `bg-primary`, `border-border`).
+
+| Semantic Token | Primitive Reference | Role & Usage |
+|---|---|---|
+| `--background` | `var(--color-ivory-50)` | Base application background |
+| `--foreground` | `var(--color-ink-900)` | Primary text color |
+| `--surface` | `var(--color-white-0)` | Elevated content surface (cards, sheets, inputs) |
+| `--surface-elevated` | `var(--color-white-0)` | Elevated surfaces (modals, popovers) |
+| `--surface-muted` | `var(--color-mist-100)` | Subtle surface variant |
+| `--primary` | `var(--color-ink-900)` | Primary action background |
+| `--primary-foreground` | `var(--color-white-0)` | Text on primary actions |
+| `--secondary` | `var(--color-mist-100)` | Secondary action background |
+| `--secondary-foreground` | `var(--color-ink-900)` | Text on secondary actions |
+| `--accent` | `var(--color-ocean-500)` | Accent highlights, selected states |
+| `--accent-foreground` | `var(--color-ink-900)` | Text on accent |
+| `--muted` | `var(--color-stone-200)` | Muted backgrounds |
+| `--muted-foreground` | `var(--color-ink-700)` | Muted text |
+| `--card` | `var(--color-white-0)` | Card background |
+| `--card-foreground` | `var(--color-ink-900)` | Card text |
+| `--popover` | `var(--color-white-0)` | Popover/modal background |
+| `--popover-foreground` | `var(--color-ink-900)` | Popover text |
+| `--border` | `var(--color-stone-200)` | Borders, dividers |
+| `--input` | `var(--color-stone-200)` | Input field borders |
+| `--ring` | `var(--color-ocean-700)` | Focus rings |
+| `--success` | `var(--color-success-700)` | Success states |
+| `--success-foreground` | `var(--color-white-0)` | Text on success |
+| `--warning` | `var(--color-warning-800)` | Warning states |
+| `--warning-foreground` | `var(--color-white-0)` | Text on warning |
+| `--destructive` | `var(--color-danger-700)` | Destructive actions |
+| `--destructive-foreground` | `var(--color-white-0)` | Text on destructive |
+| `--navigation-background` | `var(--color-white-0)` | Navigation bar background |
+| `--navigation-foreground` | `var(--color-ink-700)` | Navigation inactive icons |
+| `--navigation-active` | `var(--color-ocean-700)` | Navigation active indicator |
+| `--skeleton` | `var(--color-stone-200)` | Loading skeleton color |
+| `--focus-ring` | `var(--color-ocean-700)` | Focus indicator color |
+| `--overlay` | `#252B2D80` | General overlay (50% ink) |
+| `--image-overlay` | `#252B2D99` | Image overlay (60% ink) |
 
 ### Mood Theme Palettes
-Travel mood personalizes the app's accent tokens and Explore hero imagery without altering information architecture or core contrast:
-- **Nature (Default):** Deep forest primary, vivid lime/sage accent, soft moss wash. Reflects mountains, forests, and alpine lakes.
-- **City & Culture:** Terracotta/brick primary, warm ochre accent, soft sand wash. Reflects historic architecture, masonry, and urban streets.
-- **Beach:** Deep maritime teal primary, sunny sand accent, soft seafoam wash. Reflects coastlines, coves, and clear ocean water.
-- **Adventure:** Slate granite primary, warm canyon accent, soft stone wash. Reflects rugged peaks, trails, and outdoor terrain.
+Travel mood personalizes the app's accent tokens and Explore hero imagery without altering information architecture or core contrast. Mood-specific overrides are defined in `src/store/themeStore.ts` and applied via the theme store:
+
+- **Nature (Default):** Deep forest primary (`#263F35`), vivid lime/sage accent (`#D7E58A`), soft moss wash (`#E8EBDD`).
+- **City & Culture:** Terracotta/brick primary (`#963F32`), warm ochre accent (`#D8A66A`), soft sand wash (`#F1E6D5`).
+- **Beach:** Deep maritime teal primary (`#176C70`), sunny sand accent (`#E3C77A`), soft seafoam wash (`#DCEEF0`).
+- **Adventure:** Slate granite primary (`#344B5B`), warm canyon accent (`#CB7049`), soft stone wash (`#E8DCC8`).
+
+Mood tokens override `--primary`, `--primary-foreground`, `--accent`, `--accent-foreground`, and `--secondary` when a mood is active.
 
 ### Typography Hierarchy (Geist Sans)
 - **`hero`:** Large display headlines (Welcome screen, Explore hero banner). Tight leading, slight negative tracking.
@@ -85,8 +132,8 @@ Travel mood personalizes the app's accent tokens and Explore hero imagery withou
 - **`metadata`:** Subtitles, trip estimates, tag pills, helper copy. Compact, clear proportions with tabular numerals for financial figures.
 
 ### Casing & Tracking Guidelines
-- **No Uppercase:** Never use all-caps or uppercase transformations (`uppercase`, `text-transform: uppercase`) anywhere in the application (including section labels, badges, overlines, and metadata) unless explicitly requested. Use natural sentence case or title case.
-- **No Wider Tracking:** Never use wide or expanded tracking (`tracking-wide`, `tracking-wider`, `tracking-widest`). Geist Sans has calibrated optical bounds; headings should use standard or slightly negative tracking (`tracking-tight`), and body copy or labels should use standard default tracking. All text containers should render in clean, inline bounding boxes without layout shift.
+- **No Uppercase:** Never use all-caps or uppercase transformations anywhere in the application. Use natural sentence case or title case.
+- **No Wider Tracking:** Never use wide or expanded tracking. Geist Sans has calibrated optical bounds; headings should use standard or slightly negative tracking (`tracking-tight`), and body copy or labels should use standard default tracking.
 
 ---
 
@@ -109,26 +156,29 @@ The Outta logomark is an editorial wordmark set in Geist Sans with distinctive t
 ### Illustration Direction
 - Prefer authentic destination photography for travel discovery and concrete places.
 - Use clean, minimal vector graphics for abstract concepts in onboarding (e.g. route map paths for Location, a phone mockup with a single preview notification for Notifications, semicircular gauge for Budget).
-- Illustrations must use the semantic palette (`surface`, `border`, `mood.primary`, `mood.accent`).
+- Illustrations must use the semantic palette.
 
 ---
 
 ## 5. Components and Patterns
 
 ### Action Buttons (`Button`)
-- **Primary:** Full-width container, rounded corners (`borderRadius.input`), filled with `mood.primary`, contrasting white text. Anchored at the bottom of the screen with safe area padding.
-- **Secondary / Link:** Text-only or border-outlined action placed below the primary CTA or inline. Clean hit slop (minimum 44×44 pt touch target).
+- **Primary:** Full-width container, rounded corners (`borderRadius.input`), filled with `primary`, contrasting `primary-foreground` text. Anchored at the bottom of the screen with safe area padding.
+- **Secondary:** Filled with `secondary`, `secondary-foreground` text.
+- **Outline:** Transparent background, `primary` border, `primary` text.
+- **Ghost:** Transparent background, no border, `primary` text.
+- **Destructive:** Filled with `destructive`, `destructive-foreground` text.
 - **Loading State:** Replaces button label with an activity spinner; keeps dimensions fixed to prevent layout shift.
-- **Disabled State:** Reduced opacity; clearly communicates unavailability without hiding the control.
+- **Disabled State:** Reduced opacity (`opacity-65`); clearly communicates unavailability without hiding the control.
 
 ### Cards (`Card`, `DestinationCard`)
-- Flat `surface` fill, rounded corners (`borderRadius.card`), subtle `border` stroke.
-- Destination cards feature high-resolution photography, bottom-anchored metadata, trip duration, and clear budget basis (e.g. "per person for trip").
+- Flat `card` fill, rounded corners (`borderRadius.card`), subtle `border` stroke.
+- Destination cards feature high-resolution photography, bottom-anchored metadata, trip duration, and clear budget basis.
 
 ### Selection Options (`OnboardingOption`)
 - Reusable selectable cards used throughout onboarding.
 - **Unselected:** `surface` background, neutral `border` stroke.
-- **Selected:** Prominent `mood.primary` or `mood.accent` border highlight, accompanied by an affirmative checkmark badge.
+- **Selected:** Prominent `primary` border highlight, accompanied by an affirmative checkmark badge using `primary-foreground`.
 
 ### Navigation & Layout (`OnboardingLayout`)
 - Reusable top navigation row containing a Back arrow button on the left and a progress indicator on the right.
@@ -136,16 +186,18 @@ The Outta logomark is an editorial wordmark set in Geist Sans with distinctive t
 
 ### Progress Indicator (`ProgressIndicator`)
 - Minimal animated indicator representing the steps of the onboarding sequence.
-- Inactive steps render as compact dots; the active step smoothly expands into a horizontal line.
+- Inactive steps render as compact dots in `border` color; the active step smoothly expands into a horizontal line in `primary` color.
 
 ### Inputs & Form Fields (`Input`)
-- Integrated label, rounded container, accessible placeholder, and clear error text slot.
+- Integrated label, rounded container (`borderRadius.input`), accessible placeholder, and clear error text slot.
 - Password fields feature an integrated eye toggle with minimum 44×44 pt touch target.
+- Focus state uses `ring` color for border.
+- Error state uses `destructive` for border and background tint.
 
 ### Feedback States (`EmptyState`, `ErrorState`, `SkeletonCard`)
-- **Loading:** Content-matched skeleton cards with a gentle, non-jarring pulse shimmer.
-- **Empty State:** Editorial illustration or icon, reassuring headline, concise body copy, and a single obvious recovery CTA.
-- **Error State:** Clear error icon, plain-language description of the problem, and an explicit Retry action. Never expose raw network errors or stack traces.
+- **Loading:** Content-matched skeleton cards with `skeleton` color and a gentle, non-jarring pulse shimmer.
+- **Empty State:** Editorial illustration or icon in `secondary` background with `primary` icon, reassuring headline in `foreground`, concise body copy in `muted-foreground`, and a single obvious recovery CTA.
+- **Error State:** Clear error icon in `destructive`, plain-language description in `foreground`, and an explicit Retry action in `primary`. Never expose raw network errors or stack traces.
 
 ---
 
@@ -177,37 +229,36 @@ The Outta logomark is an editorial wordmark set in Geist Sans with distinctive t
 ### Welcome (`/`)
 - Full-bleed photography carousel showcasing diverse travel atmospheres.
 - Bottom gradient mask covering only the lower ~40% of the screen; the upper ~60% remains vibrant and unobstructed.
-- Morphing headline and subtitle, clean indicator dots, full-width "Plan a trip" primary button, and "I already have an account" secondary link.
+- Morphing headline and subtitle, clean indicator dots in `accent` (active) and `white/40` (inactive), full-width "Plan a trip" primary button in `accent` with `primary-foreground` text, and "I already have an account" secondary link.
 
 ### Authentication (`/auth/signup`, `/auth/signin`)
-- Modal presentation over base canvas.
+- Modal presentation over base `background`.
 - Input fields: Full name (signup only), Email, Password with visibility toggle.
-- Clear inline validation messages. Email verification is explicitly disabled; signup creates an immediate active session.
+- Clear inline validation messages using `destructive` for errors.
+- Email verification is explicitly disabled; signup creates an immediate active session.
 - Seamless link between Sign in and Sign up without losing input context.
 
 ### Onboarding Flow (`/onboarding/*`)
 Mandatory authenticated flow. Single question per screen, single-tap answers, working Back navigation:
-- **Typography Scale & Case:** Natural sentence case throughout. Uppercase text is strictly prohibited across all onboarding screens (titles, subtitles, labels, buttons, step indicators, accessibility labels). Page headings are left-aligned, prominent (~32–36pt, `font-medium`, tight spacing to interactive controls), and rendered as standard text to support natural line wrapping and accessibility scaling. Dynamic morphing text (`TextMorph`) is reserved exclusively for actively changing numbers and values (durations, budgets).
+- **Typography Scale & Case:** Natural sentence case throughout. Uppercase text is strictly prohibited. Page headings are left-aligned, prominent (~32–36pt, `font-medium`, tight spacing to interactive controls), and rendered as standard text to support natural line wrapping and accessibility scaling. Dynamic morphing text (`TextMorph`) is reserved exclusively for actively changing numbers and values (durations, budgets).
 - **Motion & Accessibility:** Coordinated, subtle entrance animations run once on initial mount (respecting reduced-motion preferences); zero artificial delay before interaction.
-1. **Destination Preferences (`/onboarding/mood`):** Two-column image-led grid (Nature, City & culture, Beach, Adventure). Photography is dominant with consistent corner radii (24px). Balanced bottom gradient (`transparent` to dark) ensures crystal-clear readability across all lighting conditions. Destination titles (~22–24pt) and descriptions (~15–17pt) near card base. Unselected cards omit heavy borders and radio circles; selected cards feature a restrained forest green outline (`2.5px`) with a compact upper-corner check indicator.
-2. **Trip Duration (`/onboarding/duration`):** Interactive vertical 3D wheel selector with tactile haptics, steppers, and live central duration text morphing ("3 days", "1 week", etc.) with sentence-case target label.
-3. **Trip Budget (`/onboarding/budget`):** Semicircular segmented gauge with smooth motion-path fill, synchronized with full-width vertical wheel selector (clear neighbor readability, zero bold weights).
-4. **Travel Companions (`/onboarding/travel-party`):** Two-column image-led grid sharing the exact visual language as destination preferences (Solo, Couple, Friends, Family). Relevant photography, balanced bottom gradient, titles (~22–24pt), descriptions (~15–17pt), corner radii (24px), restrained forest green outline (`2.5px`), and compact upper-corner check indicator.
-5. **Location Permission (`/onboarding/location`):** Map-inspired tile with a central location pin and a restrained discovery radius. Explains local discovery benefit. Actions: "Enable location" and "Not now".
-6. **Notification Permission (`/onboarding/notifications`):** Phone mockup illustration (open at the bottom, fading into the canvas) with a single "Trip countdown" preview notification emerging from the screen. Explains trip update benefits. Actions: "Enable notifications" and "Maybe later".
+1. **Destination Preferences (`/onboarding/mood`):** Two-column image-led grid (Nature, City & culture, Beach, Adventure). Photography is dominant with consistent corner radii (24px). Balanced bottom gradient ensures crystal-clear readability. Selected cards feature a `primary` border (2.5px) with check indicator in `primary-foreground`.
+2. **Trip Duration (`/onboarding/duration`):** Interactive vertical 3D wheel selector with tactile haptics, steppers, and live central duration text morphing.
+3. **Trip Budget (`/onboarding/budget`):** Semicircular segmented gauge with smooth motion-path fill using mood `primary` and `accent` colors, synchronized with full-width vertical wheel selector.
+4. **Travel Companions (`/onboarding/travel-party`):** Two-column image-led grid sharing the exact visual language as destination preferences.
+5. **Location Permission (`/onboarding/location`):** Map-inspired tile with a central location pin in `primary` and a restrained discovery radius.
+6. **Notification Permission (`/onboarding/notifications`):** Phone mockup illustration fading into `background` with a single preview notification card using mood `soft` and `primary` colors.
 
 ### Explore (`/(tabs)/explore`)
 - Profile-oriented header with circular avatar (`ProfileAvatar`), time-based greeting, and travel preference summary tag.
-- Mood-adaptive hero banner (`FeaturedDestination`, photographic opening) with targeted bottom-only gradient mask and integrated search bar.
-- Horizontally scrollable category pills ("All", "Nature", "City", "Beach", "Adventure") with tactile selection feedback and WCAG AA contrast.
-- Compact bento-style `TripSummary` displayed when saved destinations exist, linking directly to the active itinerary.
-- Editorial discovery sections: "Picked for your mood", "Curated highlight", "Destinations worth exploring", and "Good for a quick escape".
-- Editorial destination cards (`DestinationCard`) supporting both standard and compact layouts with inline save/bookmark action.
-- Subtle lower-edge scroll indicator fade (`ScreenFade`) respecting safe areas.
+- Mood-adaptive hero banner (`FeaturedDestination`) with targeted bottom-only gradient mask and integrated search bar using `surface` background and `input` border.
+- Horizontally scrollable category pills using `FilterChip` with `secondary` selected state and `surface` unselected state.
+- Compact bento-style `TripSummary` displayed when saved destinations exist.
+- Editorial destination cards (`DestinationCard`) using `card` background and `card-foreground` text.
 
 ### Profile (`/profile`)
 - Dedicated profile and identity screen accessible through the avatar in Explore and from Settings.
-- Gradient avatar placeholder with user initials or minimal profile mark.
+- Gradient avatar placeholder using mood-specific gradients from `avatarGradients`.
 - User identity display and editable display name.
 - Compact bento-style `TripSummary` reusing the same visual language as Explore.
 - Comprehensive `PreferenceSummary` enabling inline, in-place updates to travel mood, duration, budget, and travel party without restarting onboarding or losing saved trip data.
@@ -215,25 +266,25 @@ Mandatory authenticated flow. Single question per screen, single-tap answers, wo
 
 ### Destination Details (`/destination/[id]`)
 - Full-bleed hero photography with floating, translucent circular back button (top left) and bookmark button (top right) respecting safe areas.
-- Clear metadata: location/region, suggested stay duration, category chips, and descriptive editorial overview.
-- Clean highlights list with subtle affirmative check badges.
+- Clear metadata: location/region, suggested stay duration, category chips using `card` background and `secondary` icon backgrounds.
+- Clean highlights list with subtle affirmative check badges in `primary`.
 - Labeled estimated budget card with clear currency basis and non-booking disclaimer.
-- Fixed bottom action bar with safe area inset padding: "Add to trip" (or "Saved in trip • View itinerary").
+- Fixed bottom action bar: "Add to trip" in `primary` / "Saved in trip • View itinerary" in `secondary` with `primary` text.
 
 ### My Trip (`/(tabs)/trip`)
-- Clean header: "Your trip, taking shape."
-- Bento-style summary card: derived total budget estimate, total destination count, and currency basis.
-- Lightweight, readable itinerary list (`ItineraryRow`) with position badges, destination thumbnails, and location information.
-- Inline reordering controls (up/down chevron controls) and distinct destructive remove action with confirmation.
-- Empty state (`EmptyTripState`): centered travel visual, encouraging copy, and primary "Explore destinations" CTA.
-- Floating "Add another place" button at bottom.
+- Clean header in `foreground`.
+- Bento-style summary card using `card` background, `border` border, and `primary` for budget total.
+- Lightweight, readable itinerary list (`ItineraryRow`) using `card` background and `border` border.
+- Inline reordering controls with `foreground` icons and destructive remove action in `destructive`.
+- Empty state (`EmptyTripState`): centered travel visual in `secondary`, encouraging copy in `foreground`/`muted-foreground`, and primary "Explore destinations" CTA.
+- Floating "Add another place" button using `outline` variant.
 
 ### Settings & Preferences (`/(tabs)/settings`)
-- Profile entry point at top linking directly to Profile and Preferences.
+- Profile entry point using `card` background and `border` border.
 - In-place preference editing for travel mood, duration, budget, and travel party.
-- Grouped iOS-style permission switches (Location, Notifications) with clear explanatory labels.
-- Data and safety management: distinct destructive actions for "Clear my trip" and "Reset travel preferences" with confirmation dialogs.
-- Clean sign out action.
+- Grouped iOS-style permission switches with track colors using `border` (off) and mood `primary` (on).
+- Data and safety management: distinct destructive actions using `destructive` text and icons.
+- Clean sign out action in `destructive`.
 
 ---
 
@@ -267,6 +318,15 @@ Never communicate state through color alone. Combine color shifts with shape cha
 - Strict observance of safe area insets via `useSafeAreaInsets` for top notches, dynamic islands, and bottom home indicators.
 - Responsive layout handles small screens (e.g. iPhone SE, compact Android devices) without button overlap or content clipping.
 
+### WCAG Contrast Requirements
+All semantic token combinations must meet WCAG 2.2 AA contrast thresholds:
+- Normal text: ≥ 4.5:1
+- Large text (≥24px or ≥18.67px bold): ≥ 3:1
+- UI boundaries and graphical indicators: ≥ 3:1
+- Focus indicators: ≥ 3:1 against adjacent colors
+
+Contrast is validated via automated checks against the resolved CSS variable values in `global.css`.
+
 ---
 
 ## 10. Anti-Patterns and Review Checklist
@@ -279,6 +339,7 @@ Never communicate state through color alone. Combine color shifts with shape cha
 - **Over-Pilled Surfaces:** Avoid making every card, container, and input an extreme pill shape. Keep cards structured.
 - **Broken Affordances:** Never build a control, filter, or button that does not perform an actual action.
 - **Mixed Cost Bases:** Never add or compare estimates with differing bases (e.g. mixing per-day and total trip costs).
+- **Primitive Token Usage in Components:** Never use primitive color tokens (e.g., `--color-ink-900`) directly in component code. Always use semantic tokens.
 
 ### Screen Review Checklist
 - [ ] Visual hierarchy is obvious within 2 seconds.
@@ -289,6 +350,9 @@ Never communicate state through color alone. Combine color shifts with shape cha
 - [ ] Loading, empty, and error states are implemented and styled.
 - [ ] Accessible labels present for screen readers.
 - [ ] Reduced-motion fallback functional.
+- [ ] All colors resolve from semantic tokens in `global.css`.
+- [ ] No hardcoded hex colors in component code.
+- [ ] Mood theme changes update semantic tokens without layout shifts.
 
 ---
 
@@ -296,14 +360,17 @@ Never communicate state through color alone. Combine color shifts with shape cha
 
 ### Approved Decisions
 1. **Single Typeface Family:** Geist Sans is the sole typeface across the app for both display headlines and body copy.
-2. **Semantic NativeWind Token System:** All UI styling maps to semantic tokens defined in Tailwind/NativeWind configuration.
-3. **Bottom-Only Masking:** Welcome and card photography uses bottom gradient masks rather than full-screen dark overlays.
-4. **Mandatory Auth Before Onboarding:** Guest mode is not supported. Users must sign in or create an account before beginning onboarding.
-5. **Mood-Adaptive Semantic Accents:** Travel mood alters semantic accent tokens and Explore hero imagery without modifying information architecture or resetting trip data.
-6. **Derived Trip Budget:** Trip totals are computed dynamically from destination estimates; no mutable total is stored in the database.
-7. **Cross-Dissolve Text Morphing:** `TextMorph` provides smooth cross-dissolving transitions with zero initial mount flicker.
+2. **Two-Layer Semantic Color System:** Primitive tokens in `global.css` → Semantic tokens in `global.css` → NativeWind utilities. Components consume semantic tokens only.
+3. **`global.css` as Single Source of Truth:** All color values defined in `global.css`; no duplicate definitions in Tailwind config, TypeScript theme objects, or component styles.
+4. **Bottom-Only Masking:** Welcome and card photography uses bottom gradient masks rather than full-screen dark overlays.
+5. **Mandatory Auth Before Onboarding:** Guest mode is not supported. Users must sign in or create an account before beginning onboarding.
+6. **Mood-Adaptive Semantic Accents:** Travel mood alters semantic accent tokens and Explore hero imagery without modifying information architecture or resetting trip data.
+7. **Derived Trip Budget:** Trip totals are computed dynamically from destination estimates; no mutable total is stored in the database.
+8. **Cross-Dissolve Text Morphing:** `TextMorph` provides smooth cross-dissolving transitions with zero initial mount flicker.
+9. **NativeWind for All Styling:** Components use NativeWind utilities (`bg-background`, `text-foreground`, `bg-primary`, etc.) instead of inline styles or StyleSheet objects for color values.
 
 ### Unresolved Choices & Future Considerations
 1. **Dynamic Currency Conversion:** MVP stores USD base estimates and displays INR/USD. Multi-currency live API synchronization is deferred.
 2. **Multi-Trip Support:** MVP focuses on a single active trip per user. Multiple trip management is reserved for post-MVP.
 3. **Offline Image Pre-caching:** Background pre-fetching strategy for remote destination imagery across offline usage.
+4. **Dark Mode:** Token architecture supports dark mode (semantic overrides in `global.css`); full implementation deferred.

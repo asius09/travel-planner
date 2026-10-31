@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
+import { semanticColors } from '@/theme/colors'
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -76,10 +77,10 @@ export default function SignUpScreen() {
   }
 
   return (
-    <View className="flex-1 bg-canvas">
+    <View className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
         <Pressable onPress={handleBack} accessibilityLabel="Back" className="p-2 -ml-2">
-          <Ionicons name="chevron-back" size={28} color="#202822" />
+          <Ionicons name="chevron-back" size={28} color={semanticColors.foreground} />
         </Pressable>
       </View>
 
@@ -87,10 +88,10 @@ export default function SignUpScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text className="font-sans font-medium text-[28px] text-text mx-6 mt-4 mb-2">
+        <Text className="font-sans font-medium text-[28px] text-foreground mx-6 mt-4 mb-2">
           Create your account
         </Text>
-        <Text className="font-sans text-[15px] text-muted mx-6 mb-8 leading-6">
+        <Text className="font-sans text-[15px] text-muted-foreground mx-6 mb-8 leading-6">
           Save your trips and access them anywhere.
         </Text>
 
@@ -151,16 +152,16 @@ export default function SignUpScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#777F78"
+                  color={semanticColors.mutedForeground}
                 />
               </Pressable>
             }
           />
 
           {error && !error.toLowerCase().includes('email') && !error.toLowerCase().includes('password') ? (
-            <View className="flex-row items-center bg-red-50 border border-red-200 rounded-xl px-3.5 py-3 gap-2.5">
-              <Ionicons name="alert-circle" size={18} color="#DC2626" />
-              <Text className="flex-1 font-sans text-[13.5px] leading-[19px] font-medium text-red-800">
+            <View className="flex-row items-center bg-destructive/10 border border-destructive/30 rounded-xl px-3.5 py-3 gap-2.5">
+              <Ionicons name="alert-circle" size={18} color={semanticColors.destructive} />
+              <Text className="flex-1 font-sans text-[13.5px] leading-[19px] font-medium text-destructive">
                 {error}
               </Text>
             </View>
@@ -184,7 +185,7 @@ export default function SignUpScreen() {
       <View className="px-6 pb-8 gap-4">
         <View className="flex-row items-center gap-3 my-2">
           <View className="flex-1 h-[1px] bg-border" />
-          <Text className="font-sans text-xs text-muted">Already have an account?</Text>
+          <Text className="font-sans text-xs text-muted-foreground">Already have an account?</Text>
           <View className="flex-1 h-[1px] bg-border" />
         </View>
         <Button

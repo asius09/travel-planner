@@ -239,3 +239,216 @@ describe('Post-Onboarding Preferences & Trip Persistence', () => {
     expect(tripData.items[0].destinationId).toBe(firstDest.id)
   })
 })
+describe('Partial Onboarding Persistence & Completion', () => {
+  let authToken = ''
+
+  beforeAll(async () => {
+    const res = await app.request('/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'onboarding-flow-user@example.com',
+        password: 'password123',
+        name: 'Onboarding Flow User',
+      }),
+    })
+    const data = (await res.json()) as any
+    authToken = data.session?.token
+    expect(authToken).toBeTruthy()
+  })
+
+  afterAll(async () => {
+    try {
+      await db.delete(schema.users).where(eq(schema.users.email, 'onboarding-flow-user@example.com'))
+    } catch {
+      // Ignore
+    }
+  })
+
+  it('should persist each onboarding answer independently', async () => {
+    // Step 1: mood only
+    const moodRes = await app.request('/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ travelMood: 'beach' }),
+    })
+    expect(moodRes.status).toBe(200)
+    const afterMood = (await moodRes.json()) as any
+    expect(afterMood.travelMood).toBe('beach')
+    expect(afterMood.duration).toBeNull()
+    expect(afterMood.onboardingCompleted).toBe(false)
+
+    // Step 2: duration only — must not overwrite the saved mood
+    const durationRes = await app.request('/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ duration: 'week-plus' }),
+    })
+    expect(durationRes.status).toBe(200)
+    const afterDuration = (await durationRes.json()) as any
+    expect(afterDuration.travelMood).toBe('beach')
+    expect(afterDuration.duration).toBe('week-plus')
+    expect(afterDuration.budget).toBeNull()
+  })
+
+  it('should reject an empty partial update', async () => {
+    const res = await app.request('/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({}),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('should refuse to complete onboarding until every answer exists', async () => {
+    // Only mood + duration are saved at this point
+    const incomplete = await app.request('/preferences/complete', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+    expect(incomplete.status).toBe(409)
+    const body = (await incomplete.json()) as any
+    expect(body.code).toBe('ONBOARDING_INCOMPLETE')
+  })
+
+  it('should complete onboarding server-side only after all answers are saved', async () => {
+    const fillRes = await app.request('/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ budget: 'balanced', travelParty: 'solo' }),
+    })
+    expect(fillRes.status).toBe(200)
+
+    const completeRes = await app.request('/preferences/complete', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+    expect(completeRes.status).toBe(200)
+    const completed = (await completeRes.json()) as any
+    expect(completed.onboardingCompleted).toBe(true)
+    expect(completed.travelMood).toBe('beach')
+    expect(completed.onboardingFlowVersion).toBe(1)
+  })
+
+  it('should reject invalid answer values', async () => {
+    const res = await app.request('/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ travelMood: 'not-a-mood' }),
+    })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('Destination Image Collections', () => {
+  it('should include an ordered, distinct image collection in the list response', async () => {
+    const res = await app.request('/destinations?pageSize=5')
+    expect(res.status).toBe(200)
+    const data = (await res.json()) as any
+    expect(data.data.length).toBeGreaterThan(0)
+
+    for (const destination of data.data) {
+      expect(Array.isArray(destination.images)).toBe(true)
+      expect(destination.images.length).toBeGreaterThanOrEqual(1)
+      const positions = destination.images.map((img: any) => img.position)
+      // Positions are ordered starting at 0 with no gaps
+      expect(positions).toEqual(positions.map((_: number, i: number) => i))
+      const urls = destination.images.map((img: any) => img.url)
+      expect(new Set(urls).size).toBe(urls.length)
+      // The hero image matches the first ordered image
+      expect(destination.heroImage).toBe(destination.images[0].url)
+    }
+  })
+
+  it('should include the full ordered collection in the detail response', async () => {
+    const listRes = await app.request('/destinations?pageSize=1')
+    const list = (await listRes.json()) as any
+    const id = list.data[0].id
+
+    const res = await app.request(`/destinations/${id}`)
+    expect(res.status).toBe(200)
+    const detail = (await res.json()) as any
+    expect(detail.images.length).toBe(5)
+    for (let i = 0; i < detail.images.length; i++) {
+      expect(detail.images[i].position).toBe(i)
+      expect(detail.images[i].url).toMatch(/^https:\/\//)
+      expect(detail.images[i].id).toBeTruthy()
+    }
+    const urls = detail.images.map((img: any) => img.url)
+    expect(new Set(urls).size).toBe(urls.length)
+  })
+})
+
+describe('Trip Ownership', () => {
+  const ownerEmail = 'trip-owner@example.com'
+  const intruderEmail = 'trip-intruder@example.com'
+  let ownerToken = ''
+  let intruderToken = ''
+  let destinationId = ''
+
+  beforeAll(async () => {
+    const destRes = await app.request('/destinations?pageSize=1')
+    const destData = (await destRes.json()) as any
+    destinationId = destData.data[0].id
+
+    for (const email of [ownerEmail, intruderEmail]) {
+      const res = await app.request('/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: 'password123', name: 'Trip User' }),
+      })
+      const data = (await res.json()) as any
+      if (email === ownerEmail) ownerToken = data.session?.token
+      else intruderToken = data.session?.token
+    }
+    expect(ownerToken).toBeTruthy()
+    expect(intruderToken).toBeTruthy()
+  })
+
+  afterAll(async () => {
+    try {
+      await db.delete(schema.users).where(eq(schema.users.email, ownerEmail))
+      await db.delete(schema.users).where(eq(schema.users.email, intruderEmail))
+    } catch {
+      // Ignore
+    }
+  })
+
+  it('should not let another user read or modify someone else\'s trip', async () => {
+    // Owner adds a destination
+    const addRes = await app.request('/trips/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ownerToken}` },
+      body: JSON.stringify({ destinationId }),
+    })
+    expect([200, 201]).toContain(addRes.status)
+
+    // Owner's trip has one item
+    const ownerTrip = await app.request('/trips', {
+      headers: { Authorization: `Bearer ${ownerToken}` },
+    })
+    const ownerData = (await ownerTrip.json()) as any
+    expect(ownerData.items).toHaveLength(1)
+
+    // Intruder's trip is separate and empty
+    const intruderTrip = await app.request('/trips', {
+      headers: { Authorization: `Bearer ${intruderToken}` },
+    })
+    const intruderData = (await intruderTrip.json()) as any
+    expect(intruderData.items).toHaveLength(0)
+
+    // Intruder cannot remove the owner's item
+    const removeRes = await app.request(`/trips/items/${destinationId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${intruderToken}` },
+    })
+    expect(removeRes.status).toBe(404)
+
+    // The owner's item survives
+    const ownerTripAfter = await app.request('/trips', {
+      headers: { Authorization: `Bearer ${ownerToken}` },
+    })
+    const ownerDataAfter = (await ownerTripAfter.json()) as any
+    expect(ownerDataAfter.items).toHaveLength(1)
+  })
+})

@@ -48,7 +48,7 @@ export function ProfileAvatar({
         overflow: 'hidden',
         borderWidth: size === 'sm' ? 1.5 : 2,
         borderColor: 'rgba(255, 255, 255, 0.4)',
-        backgroundColor: '#16221B',
+        backgroundColor: 'var(--primary)',
       }}
       className="items-center justify-center relative"
     >
@@ -131,13 +131,13 @@ export function ProfileAvatar({
             width: badgeSize,
             height: badgeSize,
             borderRadius: badgeSize / 2,
-            backgroundColor: '#D4F638',
+            backgroundColor: 'var(--accent)',
             borderWidth: 1.5,
             borderColor: '#FFFFFF',
           }}
           className="items-center justify-center shadow-xs"
         >
-          <Ionicons name="pencil" size={badgeSize * 0.6} color="#121614" />
+          <Ionicons name="pencil" size={badgeSize * 0.6} color="var(--primary)" />
         </View>
       )}
     </View>

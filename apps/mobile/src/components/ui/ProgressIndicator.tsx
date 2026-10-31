@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Animated, StyleProp, ViewStyle } from 'react-native'
+import { semanticColors } from '@/theme/colors'
 
 interface ProgressIndicatorProps {
   currentStep: number
@@ -28,10 +29,10 @@ function StepIndicatorItem({
   }, [isActive, widthAnim])
 
   const backgroundColor = isActive
-    ? '#263F35'
+    ? semanticColors.primary
     : isCompleted
-      ? '#4A6B5D'
-      : '#E0E3D8'
+      ? semanticColors.primary
+      : semanticColors.border
 
   return (
     <Animated.View

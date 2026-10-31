@@ -36,13 +36,51 @@ Do not add booking, collaboration, live prices, maps, or AI itinerary generation
 - Verify loading, selected, disabled, error, accessibility, reduced-motion, and responsive states where relevant.
 - Update `DESIGN.md` when an approved design decision changes.
 - Do not treat mockups or concept artwork as implemented assets.
-- Never hardcode hex colors in screen code or documentation; reference existing semantic tokens (`canvas`, `surface`, `text`, `muted`, `border`, `mood.*`).
+- **Never hardcode hex colors in screen code or documentation; reference semantic tokens only.**
+
+### Color Architecture (Two-Layer System)
+1. **Primitive tokens** — Defined in `global.css` (`--color-ivory-50`, `--color-ink-900`, `--color-ocean-500`, etc.). Describe colors only; never used directly in components.
+2. **Semantic tokens** — Defined in `global.css` referencing primitives (`--background`, `--foreground`, `--primary`, `--secondary`, `--accent`, `--card`, `--border`, `--muted`, `--destructive`, `--success`, `--warning`, `--ring`, `--skeleton`, `--navigation-*`, etc.). **Components MUST consume these via NativeWind utilities** (`bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `bg-secondary`, `border-border`, `bg-card`, `text-card-foreground`, `bg-destructive`, `text-destructive-foreground`, `bg-accent`, `text-accent-foreground`, `bg-muted`, `text-muted-foreground`, `bg-skeleton`, `focus-ring`, etc.).
+3. **Mood overrides** — Stored in `src/store/themeStore.ts`; override `--primary`, `--primary-foreground`, `--accent`, `--accent-foreground`, `--secondary` when a mood is active.
+4. **`global.css` is the single source of truth** — No color values in `tailwind.config.ts`, TypeScript theme objects, or component styles. Tailwind config only maps semantic names; actual values live in `global.css`.
+
+### Component Token Usage Conventions
+| Component | Background | Text/Icon | Border |
+|---|---|---|---|
+| Primary button | `bg-primary` | `text-primary-foreground` | Transparent or `border-primary` |
+| Secondary button | `bg-secondary` | `text-secondary-foreground` | `border-border` |
+| Outline button | `bg-transparent` | `text-primary` | `border-primary` |
+| Destructive button | `bg-destructive` | `text-destructive-foreground` | Transparent |
+| Destination card | `bg-card` | `text-card-foreground` | `border-border` |
+| Screen background | `bg-background` | `text-foreground` | N/A |
+| Search/Input field | `bg-surface` | `text-foreground` | `border-input` / `border-ring` (focus) |
+| Placeholder text | `bg-surface` | `text-muted-foreground` | `border-input` |
+| Selected filter/chip | `bg-secondary` | `text-secondary-foreground` | `border-secondary` |
+| Accent indicator | `bg-transparent` or `bg-surface` | `text-accent` | `focus-ring` |
+| Bottom navigation | `bg-navigation-background` | `text-navigation-foreground` | `border-border` |
+| Active nav item | `bg-navigation-background` | `text-navigation-active` | `focus-ring` |
+| Skeleton loader | `bg-skeleton` | N/A | Transparent |
+| Error/validation | `bg-destructive/10` | `text-destructive` | `border-destructive` |
+| Success message | `bg-success/10` | `text-success` | `border-success` |
+
+### Typography
+- Use Geist Sans exclusively via `font-sans` (configured in `global.css`).
+- Use semantic text utilities: `text-foreground`, `text-muted-foreground`, `text-primary`, `text-primary-foreground`, `text-secondary-foreground`, `text-destructive`, `text-accent`, `text-card-foreground`.
+- Heading hierarchy: `text-hero`, `text-screen-title`, `text-card-title`, `text-body`, `text-metadata`.
+- No uppercase, no wide tracking.
+
+### Spacing & Layout
+- 8-point spatial grid (multiples of 4 and 8).
+- Consistent horizontal padding: `px-5` (20px) for screen margins, `px-6` (24px) for onboarding.
+- Border radius: `rounded-card` (18px) for cards, `rounded-input` (16px) for inputs, `rounded-full` for pills.
+- Prefer subtle 1px borders (`border-border`) over shadows.
+- Use `shadow-xs`/`shadow-sm` sparingly for elevation only when communicating meaningful layering.
 
 ## UX rules
 - Use the exact tone and primary copy in `DESIGN.md`. Keep language short, clear, useful, and calm.
 - Strictly use natural sentence case throughout the onboarding flow; uppercase styling is prohibited.
 - Maintain prominent, left-aligned onboarding page titles (~32–36pt) aligned with content grids.
-- Reserve dynamic morphing text (TextMorph) strictly for values that change interactively (duration days, budget amounts); never wrap static titles, multi-line sentences, or descriptions in TextMorph.
+- Reserve dynamic morphing text (`TextMorph`) strictly for values that change interactively (duration days, budget amounts); never wrap static titles, multi-line sentences, or descriptions in `TextMorph`.
 - Do not claim booking or reservations are supported.
 - Onboarding questions are skippable. Keep Back navigation and preserve answers.
 - Ask location and notification permissions only after explaining the benefit and the user explicitly taps Enable. Both are optional. Never block core functionality after denial.
@@ -64,8 +102,8 @@ Do not add booking, collaboration, live prices, maps, or AI itinerary generation
 - Do not mix estimates with different cost bases or currencies. Label estimates clearly.
 
 ## Mood themes and assets
-- Implement theme palettes as typed semantic tokens, not scattered hex values.
-- Keep common surfaces and text roles consistent; vary mood primary/accent/soft background and hero photography.
+- Implement theme palettes as typed semantic token overrides in `themeStore.ts`, not scattered hex values.
+- Keep common surfaces and text roles consistent; vary mood primary/accent/soft and hero photography.
 - Seed at least five destinations per mood.
 - Use stable, licensed/allowed image assets, optimized sizes, consistent crops, loading placeholders, and fallbacks.
 - Do not assume remote image URLs will always work.
@@ -94,7 +132,7 @@ A task is done only when:
 2. Loading, empty, and error cases are handled.
 3. Relevant tests pass or any blocker is explicitly reported.
 4. No secrets are committed.
-5. UI follows `DESIGN.md`.
+5. UI follows `DESIGN.md` — **all colors resolve from semantic tokens in `global.css`**.
 6. Persistence, authorization, and data integrity are verified for affected flows.
 7. Documentation is updated if architecture, setup, or behavior changed.
 
@@ -105,3 +143,15 @@ A task is done only when:
 4. Implement and test the change.
 5. Report files changed, commands/tests run, results, and known limitations.
 6. Never claim deployment, repository updates, or device testing unless the action actually succeeded.
+
+## Enforceable Design System Rules (from DESIGN.md)
+1. **Always use Geist and the design system tokens.**
+2. **`global.css` is the only source of truth for color values.**
+3. **Define primitives first, semantic tokens second.**
+4. **Components and screens must use semantic tokens via NativeWind utilities.**
+5. **Never copy arbitrary colors from visual references or screenshots.**
+6. **Use NativeWind for standard component styling.**
+7. **Do not introduce new hardcoded UI colors, duplicate theme definitions, or unnecessary stylesheets.**
+8. **Reuse shared components and respect the established interaction and accessibility conventions.**
+9. **Mood changes only override specific semantic tokens (`--primary`, `--accent`, `--secondary`, `--primary-foreground`, `--accent-foreground`).**
+10. **All contrast must meet WCAG AA; validate via automated checks against resolved CSS variables.**

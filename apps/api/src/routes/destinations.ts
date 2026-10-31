@@ -2,9 +2,9 @@ import { createRoute, z } from '@hono/zod-openapi'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import type { AppEnv } from '../types'
 import { db } from '../db'
-import { destinations, insertDestinationSchema } from '../db/schema'
-import { eq, and, ilike, or, inArray, desc, sql } from 'drizzle-orm'
-import { searchParamsSchema, travelMoodSchema } from '@travel-planner/shared'
+import { destinations, destinationImages, insertDestinationSchema } from '../db/schema'
+import { eq, and, ilike, or, inArray, desc, asc, sql } from 'drizzle-orm'
+import { searchParamsSchema, travelMoodSchema, destinationImageSchema } from '@travel-planner/shared'
 
 const destinationResponseSchema = z.object({
   id: z.string().uuid(),
@@ -25,9 +25,55 @@ const destinationResponseSchema = z.object({
   imageCredit: z.string().nullable(),
   isPublished: z.boolean(),
   popularity: z.number(),
+  images: z.array(destinationImageSchema),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
+
+type DestinationRow = typeof destinations.$inferSelect
+
+/**
+ * Attaches the ordered image collection to destination rows. One batched query
+ * per response keeps list endpoints cheap; positions are unique per
+ * destination so the order is stable.
+ */
+async function withImages(rows: DestinationRow[]) {
+  if (rows.length === 0) return []
+
+  const ids = rows.map((row) => row.id)
+  const images = await db
+    .select({
+      id: destinationImages.id,
+      destinationId: destinationImages.destinationId,
+      url: destinationImages.url,
+      alt: destinationImages.alt,
+      position: destinationImages.position,
+    })
+    .from(destinationImages)
+    .where(inArray(destinationImages.destinationId, ids))
+    .orderBy(asc(destinationImages.destinationId), asc(destinationImages.position))
+
+  const imagesByDestination = new Map<string, typeof images>()
+  for (const image of images) {
+    const list = imagesByDestination.get(image.destinationId) ?? []
+    list.push(image)
+    imagesByDestination.set(image.destinationId, list)
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    region: row.region ?? null,
+    imageCredit: row.imageCredit ?? null,
+    images: (imagesByDestination.get(row.id) ?? []).map((image) => ({
+      id: image.id,
+      url: image.url,
+      alt: image.alt ?? null,
+      position: image.position,
+    })),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  }))
+}
 
 const destinationsListResponseSchema = z.object({
   data: z.array(destinationResponseSchema),
@@ -120,15 +166,11 @@ destinationsRoutes.openapi(
           .from(destinations)
           .where(whereClause),
       ])
-      
+
+      const data = await withImages(items)
+
       return c.json({
-        data: items.map(item => ({
-          ...item,
-          region: item.region ?? null,
-          imageCredit: item.imageCredit ?? null,
-          createdAt: item.createdAt.toISOString(),
-          updatedAt: item.updatedAt.toISOString(),
-        })),
+        data,
         total: Number(count),
         page,
         pageSize,
@@ -192,13 +234,9 @@ destinationsRoutes.openapi(
         return c.json({ error: 'Destination not found', code: 'NOT_FOUND' }, 404)
       }
       
-      return c.json({
-        ...destination,
-        region: destination.region ?? null,
-        imageCredit: destination.imageCredit ?? null,
-        createdAt: destination.createdAt.toISOString(),
-        updatedAt: destination.updatedAt.toISOString(),
-      }, 200)
+      const [withImageData] = await withImages([destination])
+      
+      return c.json(withImageData, 200)
     } catch (error) {
       console.error('Destination fetch error:', error)
       return c.json({ error: 'Failed to fetch destination', code: 'FETCH_FAILED' }, 500)
@@ -254,13 +292,9 @@ destinationsRoutes.openapi(
         limit,
       })
       
-      return c.json(items.map(item => ({
-        ...item,
-        region: item.region ?? null,
-        imageCredit: item.imageCredit ?? null,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
-      })), 200)
+      const data = await withImages(items)
+      
+      return c.json(data, 200)
     } catch (error) {
       console.error('Mood destinations error:', error)
       return c.json({ error: 'Failed to fetch destinations', code: 'FETCH_FAILED' }, 500)

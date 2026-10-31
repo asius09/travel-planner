@@ -7,20 +7,59 @@ const config: Config = {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
+    './global.css',
   ],
   presets: [nativewind],
   theme: {
     extend: {
       colors: {
-        canvas: '#F7F6F0',
-        surface: '#FFFFFF',
-        text: '#202822',
-        muted: '#777F78',
-        border: '#E5E7DF',
-        // Nature (default) mood tokens
-        primary: '#263F35',
-        accent: '#D7E58A',
-        soft: '#E8EBDD',
+        /* 
+         * Semantic color tokens - base values matching Nature mood (default).
+         * Mood-specific overrides are applied at runtime via theme store.
+         */
+        background: '#F6F4EF',      // ivory-50
+        foreground: '#252B2D',      // ink-900
+
+        surface: '#FFFFFF',         // white-0
+        'surface-elevated': '#FFFFFF',
+        'surface-muted': '#DCE5E7', // mist-100
+
+        // Nature mood defaults (default theme)
+        primary: '#263F35',         // nature primary - deep forest
+        'primary-foreground': '#FFFFFF',
+
+        secondary: '#E8EBDD',       // nature soft - moss wash
+        'secondary-foreground': '#252B2D',
+
+        accent: '#D7E58A',          // nature accent - vivid lime/sage
+        'accent-foreground': '#252B2D',
+
+        muted: '#E7E3DB',           // stone-200
+        'muted-foreground': '#454B4D', // ink-700
+
+        card: '#FFFFFF',
+        'card-foreground': '#252B2D',
+
+        popover: '#FFFFFF',
+        'popover-foreground': '#252B2D',
+
+        border: '#E7E3DB',          // stone-200
+        input: '#E7E3DB',
+        ring: '#456779',            // ocean-700
+
+        success: '#286749',
+        'success-foreground': '#FFFFFF',
+        warning: '#795000',
+        'warning-foreground': '#FFFFFF',
+        destructive: '#B42318',
+        'destructive-foreground': '#FFFFFF',
+
+        'navigation-background': '#FFFFFF',
+        'navigation-foreground': '#454B4D',
+        'navigation-active': '#456779',
+
+        skeleton: '#E7E3DB',
+        'focus-ring': '#456779',
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],

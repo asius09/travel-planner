@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { formatCurrency } from '@travel-planner/shared'
 import { useThemeStore } from '@/store/themeStore'
 import type { Destination } from '@travel-planner/shared'
+import { semanticColors } from '@/theme/colors'
 
 interface ItineraryRowProps {
   position: number
@@ -43,7 +44,7 @@ export function ItineraryRow({
 
   return (
     <View
-      className={`bg-surface rounded-[20px] border border-border p-3.5 flex-row items-center gap-3.5 ${className}`}
+      className={`bg-card rounded-[20px] border border-border p-3.5 flex-row items-center gap-3.5 ${className}`}
     >
       {/* Position Badge */}
       <View
@@ -63,7 +64,7 @@ export function ItineraryRow({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`View details for ${name}`}
-        className="w-16 h-16 rounded-[14px] overflow-hidden relative bg-canvas active:opacity-90"
+        className="w-16 h-16 rounded-[14px] overflow-hidden relative bg-surface-muted active:opacity-90"
       >
         <ExpoImage
           source={{ uri: heroImage }}
@@ -80,11 +81,11 @@ export function ItineraryRow({
         accessibilityLabel={`${name}, ${location}`}
         className="flex-1 justify-center active:opacity-80 min-w-0"
       >
-        <Text className="font-sans font-medium text-[16px] text-text" numberOfLines={1}>
+        <Text className="font-sans font-medium text-[16px] text-card-foreground" numberOfLines={1}>
           {name}
         </Text>
         {location ? (
-          <Text className="font-sans text-xs text-muted mt-0.5" numberOfLines={1}>
+          <Text className="font-sans text-xs text-muted-foreground mt-0.5" numberOfLines={1}>
             {location}
           </Text>
         ) : null}
@@ -107,7 +108,7 @@ export function ItineraryRow({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             className={`p-1 ${!canMoveUp ? 'opacity-20' : 'active:opacity-60'}`}
           >
-            <Ionicons name="chevron-up" size={19} color="#202822" />
+            <Ionicons name="chevron-up" size={19} color={semanticColors.foreground} />
           </Pressable>
           <Pressable
             onPress={onMoveDown}
@@ -117,7 +118,7 @@ export function ItineraryRow({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             className={`p-1 ${!canMoveDown ? 'opacity-20' : 'active:opacity-60'}`}
           >
-            <Ionicons name="chevron-down" size={19} color="#202822" />
+            <Ionicons name="chevron-down" size={19} color={semanticColors.foreground} />
           </Pressable>
         </View>
 
@@ -128,7 +129,7 @@ export function ItineraryRow({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           className="p-2 ml-0.5 active:opacity-60"
         >
-          <Ionicons name="trash-outline" size={19} color="#D9534F" />
+          <Ionicons name="trash-outline" size={19} color={semanticColors.destructive} />
         </Pressable>
       </View>
     </View>

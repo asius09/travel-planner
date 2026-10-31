@@ -49,38 +49,58 @@ export function TripSummary({
       accessibilityLabel={`Trip summary: ${destinationCount} ${
         destinationCount === 1 ? 'destination' : 'destinations'
       } saved, estimated budget ${formatCurrency(totalBudget, 'USD')}`}
-      className={`bg-surface rounded-[22px] border border-border p-4 active:opacity-95 ${className}`}
+      style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: '#E7E3DB',
+        padding: 16,
+      }}
     >
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="flex-row items-center gap-2">
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View
-            style={{ backgroundColor: tokens.soft }}
-            className="w-7 h-7 rounded-full items-center justify-center"
+            style={{
+              backgroundColor: tokens.soft,
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             <Ionicons name="bookmark" size={14} color={tokens.primary} />
           </View>
-          <Text className="font-sans font-medium text-[14px] text-text">Active itinerary</Text>
+          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: '#252B2D' }}>Active itinerary</Text>
         </View>
 
-        <View className="flex-row items-center gap-1">
-          <Text className="font-sans text-xs text-muted">View trip</Text>
-          <Ionicons name="chevron-forward" size={14} color="#777F78" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={{ fontFamily: 'Geist', fontSize: 12, color: '#454B4D' }}>View trip</Text>
+          <Ionicons name="chevron-forward" size={14} color="#454B4D" />
         </View>
       </View>
 
-      <View className="flex-row items-baseline justify-between bg-canvas/60 rounded-[14px] p-3 border border-border/60">
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        backgroundColor: '#DCE5E7',
+        borderRadius: 14,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#E7E3DB',
+      }}>
         <View>
-          <Text className="font-sans text-[12px] text-muted">Destinations</Text>
-          <Text className="font-sans font-medium text-[17px] text-text mt-0.5">
+          <Text style={{ fontFamily: 'Geist', fontSize: 12, color: '#454B4D' }}>Destinations</Text>
+          <Text style={{ fontFamily: 'Geist', fontSize: 17, fontWeight: '500', color: '#252B2D', marginTop: 2 }}>
             {destinationCount} {destinationCount === 1 ? 'place' : 'places'}
           </Text>
         </View>
 
-        <View className="items-end">
-          <Text className="font-sans text-[12px] text-muted">Estimated total</Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={{ fontFamily: 'Geist', fontSize: 12, color: '#454B4D' }}>Estimated total</Text>
           <Text
-            style={{ color: tokens.primary }}
-            className="font-sans font-medium text-[19px] mt-0.5"
+            style={{ fontFamily: 'Geist', fontSize: 19, fontWeight: '500', color: tokens.primary, marginTop: 2 }}
           >
             {formatCurrency(totalBudget, 'USD')}
           </Text>

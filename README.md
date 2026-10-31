@@ -69,7 +69,7 @@ cp .env.example .env
 # Set up database
 cd apps/api
 pnpm db:generate
-pnpm db:push
+pnpm db:migrate
 pnpm db:seed
 cd ../..
 
@@ -77,6 +77,10 @@ cd ../..
 pnpm dev          # Starts Expo mobile app
 pnpm dev:api      # Starts API server (in separate terminal)
 ```
+
+> **Note:** use `pnpm db:migrate`, not `pnpm db:push`. `drizzle-kit push`
+> introspects the live database, which hangs indefinitely on Neon's connection
+> pooler. `db:migrate` applies the SQL that `db:generate` produces directly.
 
 ### Mobile App
 

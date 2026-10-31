@@ -12,9 +12,9 @@ describe('Input Component', () => {
     expect(defaultClasses).toContain('border-border')
   })
 
-  it('should handle focus state with primary border without widening border or outline', () => {
+  it('should handle focus state with ring border without widening border or outline', () => {
     const focusedClasses = getBaseInputClasses({ isFocused: true })
-    expect(focusedClasses).toContain('border-primary')
+    expect(focusedClasses).toContain('border-ring')
     expect(focusedClasses).toContain('border')
     expect(focusedClasses).not.toContain('border-2')
     expect(focusedClasses).not.toContain('border-[1.5px]')
@@ -22,8 +22,8 @@ describe('Input Component', () => {
 
   it('should handle error state with alert border and background tint', () => {
     const errorClasses = getBaseInputClasses({ hasError: true })
-    expect(errorClasses).toContain('border-red-500')
-    expect(errorClasses).toContain('bg-red-50/50')
+    expect(errorClasses).toContain('border-destructive')
+    expect(errorClasses).toContain('bg-destructive/10')
     expect(errorClasses).toContain('border')
   })
 

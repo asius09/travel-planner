@@ -6,10 +6,10 @@ import {
   Text,
   View,
   Animated,
-  ActivityIndicator,
   Platform,
   LayoutAnimation,
   UIManager,
+  ActivityIndicator,
   type GestureResponderEvent,
   type PressableProps,
   type TextStyle,
@@ -20,7 +20,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true)
 }
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost'
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface ButtonProps extends Omit<PressableProps, 'children'> {
@@ -40,9 +40,10 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
 
 const variantContainerClasses: Record<ButtonVariant, string> = {
   primary: 'bg-primary border border-transparent active:opacity-95',
-  secondary: 'bg-accent border border-transparent active:opacity-90',
+  secondary: 'bg-secondary border border-transparent active:opacity-90',
   outline: 'bg-transparent border border-primary active:bg-primary/5',
-  ghost: 'bg-transparent border border-transparent active:bg-black/5',
+  ghost: 'bg-transparent border border-transparent active:bg-muted/30',
+  destructive: 'bg-destructive border border-transparent active:opacity-95',
 }
 
 const sizeContainerClasses: Record<ButtonSize, string> = {
@@ -52,10 +53,11 @@ const sizeContainerClasses: Record<ButtonSize, string> = {
 }
 
 const variantTextClasses: Record<ButtonVariant, string> = {
-  primary: 'text-white',
-  secondary: 'text-text',
+  primary: 'text-primary-foreground',
+  secondary: 'text-secondary-foreground',
   outline: 'text-primary',
   ghost: 'text-primary',
+  destructive: 'text-destructive-foreground',
 }
 
 const sizeTextClasses: Record<ButtonSize, string> = {
@@ -66,9 +68,10 @@ const sizeTextClasses: Record<ButtonSize, string> = {
 
 const defaultSpinnerColors: Record<ButtonVariant, string> = {
   primary: '#FFFFFF',
-  secondary: '#202822',
-  outline: '#263F35',
-  ghost: '#263F35',
+  secondary: '#252B2D',
+  outline: '#252B2D',
+  ghost: '#252B2D',
+  destructive: '#FFFFFF',
 }
 
 const spinnerSizes: Record<ButtonSize, 'small' | 'large'> = {
@@ -146,9 +149,6 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isInteractive = !disabled && !loading
-  // Stable animation drivers. A state initializer runs once per component
-  // instance, which keeps the Animated.Value identity stable without reading
-  // a ref during render.
   const [scaleAnim] = useState(() => new Animated.Value(1))
   const [loadingAnim] = useState(() => new Animated.Value(loading ? 1 : 0))
   const prevLoadingRef = useRef(loading)

@@ -16,4 +16,4 @@ module.exports = {
     // into both sides of the codebase.
     '@typescript-eslint/no-explicit-any': 'warn',
   },
-}
+};

@@ -21,6 +21,7 @@ import * as Haptics from 'expo-haptics'
 import type { Destination } from '@travel-planner/shared'
 import { formatCurrency } from '@travel-planner/shared'
 import { useTripStore } from '@/store/tripStore'
+import { semanticColors } from '@/theme/colors'
 
 interface FeaturedCarouselProps {
   destinations: Destination[]
@@ -42,8 +43,6 @@ export function FeaturedCarousel({
   const [isReducedMotion, setIsReducedMotion] = useState(false)
 
   const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null)
-  // Timer handles: `ReturnType<typeof setInterval>` keeps the type
-  // platform-agnostic (DOM and React Native return different handle types).
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -188,7 +187,7 @@ export function FeaturedCarousel({
               accessibilityRole="button"
               accessibilityLabel={`${item.name}, ${location}`}
               style={{ width: cardWidth, height: cardHeight }}
-              className="relative rounded-[30px] overflow-hidden bg-[#18201B] active:opacity-95"
+              className="relative rounded-[30px] overflow-hidden bg-surface-muted active:opacity-95"
             >
               {/* Destination Image */}
               <ExpoImage
@@ -227,13 +226,13 @@ export function FeaturedCarousel({
                   accessibilityLabel={isSaved ? 'Remove from trip' : 'Save to trip'}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   className={`w-10 h-10 rounded-full items-center justify-center border border-white/30 ${
-                    isSaved ? 'bg-[#D4F638]' : 'bg-black/40 backdrop-blur-md'
+                    isSaved ? 'bg-accent' : 'bg-black/40 backdrop-blur-md'
                   }`}
                 >
                   <Ionicons
                     name={isSaved ? 'bookmark' : 'bookmark-outline'}
                     size={18}
-                    color={isSaved ? '#121614' : '#FFFFFF'}
+                    color={isSaved ? semanticColors.accentForeground : semanticColors.white}
                   />
                 </Pressable>
               </View>
@@ -256,7 +255,7 @@ export function FeaturedCarousel({
                     <Text className="font-sans text-[11px] text-white/70">
                       Estimated budget
                     </Text>
-                    <Text className="font-sans font-medium text-[16px] text-[#D4F638]">
+                    <Text className="font-sans font-medium text-[16px] text-accent">
                       {formatCurrency(item.estimatedCostMinor, (item.costCurrency as 'USD' | 'INR') || 'USD')}
                     </Text>
                   </View>
@@ -266,7 +265,7 @@ export function FeaturedCarousel({
                     <Text className="font-sans font-medium text-[12.5px] text-white">
                       Explore
                     </Text>
-                    <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+                    <Ionicons name="arrow-forward" size={13} color={semanticColors.white} />
                   </View>
                 </View>
               </View>
@@ -294,7 +293,7 @@ export function FeaturedCarousel({
                     height: 5,
                     width: isActive ? 22 : 6,
                     borderRadius: 2.5,
-                    backgroundColor: isActive ? '#D4F638' : 'rgba(120, 130, 125, 0.4)',
+                    backgroundColor: isActive ? semanticColors.accent : 'rgba(120, 130, 125, 0.4)',
                   }}
                 />
               </Pressable>

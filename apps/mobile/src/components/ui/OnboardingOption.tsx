@@ -3,6 +3,7 @@
 import React from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { semanticColors } from '@/theme/colors'
 
 interface OnboardingOptionProps {
   label: string
@@ -44,24 +45,24 @@ export function OnboardingOption({
           <Ionicons
             name={icon}
             size={20}
-            color={selected ? '#FFFFFF' : '#263F35'}
+            color={selected ? semanticColors.primaryForeground : semanticColors.primary}
           />
         </View>
       ) : null}
 
       <View className="flex-1 min-w-0">
-        <Text className={`text-base text-text ${selected ? 'font-medium' : 'font-normal'}`}>
+        <Text className={`text-base text-foreground ${selected ? 'font-medium' : 'font-normal'}`}>
           {label}
         </Text>
         {description ? (
-          <Text className="font-normal text-xs text-muted mt-0.5">{description}</Text>
+          <Text className="font-normal text-xs text-muted-foreground mt-0.5">{description}</Text>
         ) : null}
       </View>
 
       <Ionicons
         name="checkmark-circle"
         size={24}
-        color={selected ? '#263F35' : 'transparent'}
+        color={selected ? semanticColors.primary : 'transparent'}
       />
     </Pressable>
   )

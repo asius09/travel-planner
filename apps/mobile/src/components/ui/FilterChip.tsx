@@ -1,14 +1,17 @@
 'use client'
 
 import React from 'react'
-import { Pressable, Text, PressableProps, type GestureResponderEvent } from 'react-native'
+import { Pressable, Text, View, PressableProps, type GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import { useThemeStore } from '@/store/themeStore'
 
 interface FilterChipProps extends PressableProps {
   label: string
   selected?: boolean
   disabled?: boolean
   className?: string
+  style?: StyleProp<ViewStyle>
 }
 
 export function FilterChip({
@@ -17,8 +20,11 @@ export function FilterChip({
   onPress,
   disabled = false,
   className = '',
+  style,
   ...props
 }: FilterChipProps) {
+  const { tokens } = useThemeStore()
+
   const handlePress = (e: GestureResponderEvent) => {
     try {
       Haptics.selectionAsync()
@@ -28,13 +34,30 @@ export function FilterChip({
     onPress?.(e)
   }
 
+  const selectedBg = tokens.primary
+  const selectedBorder = tokens.primary
+  const selectedText = tokens.primaryForeground
+  const unselectedBorder = '#E7E3DB'
+  const unselectedText = '#252B2D'
+
   return (
     <Pressable
-      className={`flex-row items-center justify-center py-2.5 px-4 rounded-full border min-w-[72px] active:scale-95 transition-transform ${
+      style={[
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          borderRadius: 9999,
+          borderWidth: 1,
+          minWidth: 64,
+        },
         selected
-          ? 'bg-[#D4F638] border-[#D4F638] shadow-xs'
-          : 'bg-surface border-border'
-      } ${className}`}
+          ? { backgroundColor: selectedBg, borderColor: selectedBorder }
+          : { backgroundColor: 'transparent', borderColor: unselectedBorder },
+        style,
+      ]}
       onPress={handlePress}
       disabled={disabled}
       accessibilityRole="button"
@@ -44,10 +67,12 @@ export function FilterChip({
       {...props}
     >
       <Text
-        style={{ color: selected ? '#121614' : undefined }}
-        className={`font-sans text-[13.5px] ${
-          selected ? 'font-medium' : 'font-normal text-text'
-        }`}
+        style={{
+          fontFamily: 'Geist',
+          fontSize: 13,
+          fontWeight: selected ? '500' : '400',
+          color: selected ? selectedText : unselectedText,
+        }}
       >
         {label}
       </Text>

@@ -3,6 +3,7 @@
 import React from 'react'
 import { View, Text, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { semanticColors } from '@/theme/colors'
 
 interface SectionHeaderProps {
   title: string
@@ -22,11 +23,11 @@ export function SectionHeader({
   return (
     <View className={`flex-row items-baseline justify-between mb-3 ${className}`}>
       <View className="flex-1 mr-3">
-        <Text className="font-sans font-medium text-[20px] text-text tracking-tight">
+        <Text className="font-sans font-medium text-[20px] text-foreground tracking-tight">
           {title}
         </Text>
         {subtitle ? (
-          <Text className="font-sans text-[13px] text-muted mt-0.5">{subtitle}</Text>
+          <Text className="font-sans text-[13px] text-muted-foreground mt-0.5">{subtitle}</Text>
         ) : null}
       </View>
 
@@ -41,7 +42,7 @@ export function SectionHeader({
           <Text className="font-sans font-medium text-[13px] text-primary">
             {actionLabel}
           </Text>
-          <Ionicons name="chevron-forward" size={13} color="#263F35" />
+          <Ionicons name="chevron-forward" size={13} color={semanticColors.primary} />
         </Pressable>
       ) : null}
     </View>

@@ -15,4 +15,4 @@ module.exports = {
     // The API deliberately uses `unknown` in catch blocks instead of `any`.
     '@typescript-eslint/no-explicit-any': 'warn',
   },
-}
+};

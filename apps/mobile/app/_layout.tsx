@@ -1,68 +1,63 @@
-import '@/polyfills'
-import './global.css'
-import React, { useEffect } from 'react'
-import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
-import { Stack, useRouter, useSegments } from 'expo-router'
-import { useFonts } from 'expo-font'
-import { Providers } from '@/components/Providers'
-import { useAuthStore } from '@/store/authStore'
-import { useOnboardingStore, getResumeStep } from '@/store/onboardingStore'
-import * as SplashScreen from 'expo-splash-screen'
+import '@/polyfills';
+import './global.css';
+import { useEffect } from 'react';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { Providers } from '@/components/Providers';
+import { useAuthStore } from '@/store/authStore';
+import { useOnboardingStore, getResumeStep } from '@/store/onboardingStore';
+import * as SplashScreen from 'expo-splash-screen';
 
-SplashScreen.preventAutoHideAsync().catch(() => {})
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
-})
+});
 
 function NavigationGuard() {
-  const router = useRouter()
-  const segments = useSegments()
-  const { user, isInitialized: isAuthReady, restoreSession } = useAuthStore()
-  const { data: onboardingData } = useOnboardingStore()
+  const router = useRouter();
+  const segments = useSegments();
+  const { user, isInitialized: isAuthReady, restoreSession } = useAuthStore();
+  const { data: onboardingData } = useOnboardingStore();
 
   useEffect(() => {
-    restoreSession()
-  }, [])
+    restoreSession();
+  }, []);
 
   useEffect(() => {
-    // Only evaluate routing after auth store rehydration
-    if (!isAuthReady) return
+    if (!isAuthReady) return;
 
-    const rootSegment = segments[0] as string | undefined
-    const inAuthGroup = rootSegment === 'auth'
-    const inWelcome = !rootSegment || rootSegment === 'index'
-    const inOnboardingGroup = rootSegment === 'onboarding'
+    const rootSegment = segments[0] as string | undefined;
+    const inAuthGroup = rootSegment === 'auth';
+    const inWelcome = !rootSegment || rootSegment === 'index';
+    const inOnboardingGroup = rootSegment === 'onboarding';
     const inProtectedGroup =
-      rootSegment === '(tabs)' || rootSegment === 'destination' || rootSegment === 'profile'
+      rootSegment === '(tabs)' || rootSegment === 'destination' || rootSegment === 'profile';
 
-    const isAuthenticated = !!user
-    const isOnboardingComplete = onboardingData.completed
+    const isAuthenticated = !!user;
+    const isOnboardingComplete = onboardingData.completed;
 
     if (!isAuthenticated) {
-      // Unauthenticated: cannot access onboarding or main app screens
       if (inOnboardingGroup || inProtectedGroup) {
-        router.replace('/')
+        router.replace('/');
       }
     } else {
-      // Authenticated:
       if (!isOnboardingComplete) {
-        // Incomplete onboarding: direct to resume step
         if (inWelcome || inAuthGroup || inProtectedGroup) {
-          const resumeStep = getResumeStep(onboardingData)
-          router.replace(resumeStep)
+          const resumeStep = getResumeStep(onboardingData);
+          router.replace(resumeStep);
         }
       } else {
-        // Completed onboarding: cannot return to welcome or auth
         if (inWelcome || inAuthGroup) {
-          router.replace('/(tabs)/explore')
+          router.replace('/(tabs)/explore');
         }
       }
     }
-  }, [user, onboardingData.completed, isAuthReady, segments])
+  }, [user, onboardingData.completed, isAuthReady, segments]);
 
-  return null
+  return null;
 }
 
 export default function RootLayout() {
@@ -76,22 +71,21 @@ export default function RootLayout() {
     Geist_SemiBold: require('../assets/fonts/Geist-SemiBold.ttf'),
     'Geist-Bold': require('../assets/fonts/Geist-Bold.ttf'),
     Geist_Bold: require('../assets/fonts/Geist-Bold.ttf'),
-  })
+  });
 
   // Hide native splash screen once fonts are loaded or when a font error occurs
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {})
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError])
+  }, [fontsLoaded, fontError]);
 
-  // Safety fallback: splash screen must never block the app for more than 1.5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {})
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [])
+      SplashScreen.hideAsync().catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Providers>
@@ -99,7 +93,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#F7F6F0' },
+          contentStyle: { backgroundColor: '#F6F4EF' },
         }}
       >
         <Stack.Screen name="index" />
@@ -114,8 +108,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding/permissions" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="destination/[id]" />
-        <Stack.Screen name="profile" />
       </Stack>
     </Providers>
-  )
+  );
 }

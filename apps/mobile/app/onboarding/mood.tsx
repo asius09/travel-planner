@@ -146,7 +146,7 @@ function MoodCard({
           height: '100%',
           borderRadius: 24,
           overflow: 'hidden',
-          backgroundColor: '#E8EBDD',
+          backgroundColor: 'var(--secondary)',
         }}
       >
         {/* Edge-to-edge High Quality Photography */}
@@ -197,7 +197,7 @@ function MoodCard({
             right: 0,
             borderRadius: 24,
             borderWidth: 2.5,
-            borderColor: '#263F35',
+            borderColor: 'var(--primary)',
             opacity: selectAnim,
           }}
           pointerEvents="none"
@@ -222,7 +222,7 @@ function MoodCard({
           pointerEvents="none"
         >
           <View className="w-7 h-7 rounded-full bg-primary items-center justify-center border border-white/20 shadow-xs">
-            <Ionicons name="checkmark" size={15} color="#D7E58A" />
+            <Ionicons name="checkmark" size={15} color="var(--primary-foreground)" />
           </View>
         </Animated.View>
       </Pressable>

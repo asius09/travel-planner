@@ -59,11 +59,11 @@ export function getBaseInputClasses({
   return [
     'h-[50px] min-h-[50px] flex-row items-center border transition-colors',
     rounded ? 'rounded-full' : 'rounded-[14px]',
-    transparent ? 'bg-transparent' : hasError ? 'bg-red-50/50' : 'bg-surface',
+    transparent ? 'bg-transparent' : hasError ? 'bg-destructive/10' : 'bg-surface',
     hasError
-      ? 'border-red-500'
+      ? 'border-destructive'
       : isFocused
-        ? 'border-primary'
+        ? 'border-ring'
         : 'border-border',
     disabled ? 'opacity-60' : '',
   ]
@@ -97,7 +97,7 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
       editable = true,
       onFocus,
       onBlur,
-      placeholderTextColor = '#777F78',
+      placeholderTextColor = 'var(--muted-foreground)',
       ...props
     },
     ref
@@ -161,7 +161,7 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
             style={labelStyle}
           >
             {label}
-            {required ? <Text className="text-red-500"> *</Text> : null}
+            {required ? <Text className="text-destructive"> *</Text> : null}
           </Text>
         ) : null}
 
@@ -186,8 +186,8 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
           <TextInput
             ref={ref}
             placeholderTextColor={placeholderTextColor}
-            selectionColor="#263F35"
-            cursorColor="#263F35"
+            selectionColor="var(--ring)"
+            cursorColor="var(--ring)"
             className={[
               'flex-1 h-full font-sans text-[15px] text-text',
               leftIcon ? 'pl-11' : 'pl-4',
@@ -224,11 +224,11 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
           <Animated.View style={{ opacity: hasError ? errorOpacity : 1 }}>
             <View className="flex-row items-center gap-1.5 mt-1.5 ml-0.5">
               {hasError ? (
-                <Ionicons name="alert-circle" size={14} color="#DC2626" />
+                <Ionicons name="alert-circle" size={14} color="var(--destructive)" />
               ) : null}
               <Text
                 className={`font-sans text-[13px] leading-[18px] ${
-                  hasError ? 'font-medium text-red-600' : 'font-normal text-muted'
+                  hasError ? 'font-medium text-destructive' : 'font-normal text-muted-foreground'
                 } ${errorClassName || ''}`}
                 style={errorStyle}
               >

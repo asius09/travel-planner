@@ -107,7 +107,7 @@ export function OnboardingLayout({
 
   return (
     <View
-      className="flex-1 bg-canvas"
+      className="flex-1 bg-background"
       style={{
         paddingTop: Math.max(insets.top, 16),
       }}
@@ -119,9 +119,9 @@ export function OnboardingLayout({
           accessibilityLabel="Back"
           accessibilityRole="button"
           hitSlop={12}
-          className="w-10 h-10 items-center justify-center -ml-2 rounded-full active:bg-border/40"
+          className="w-10 h-10 items-center justify-center -ml-2 rounded-full active:bg-muted/40"
         >
-          <Ionicons name="arrow-back" size={24} color="#202822" />
+          <Ionicons name="arrow-back" size={24} color="var(--foreground)" />
         </Pressable>
 
         {currentStep && totalSteps ? (
@@ -136,9 +136,14 @@ export function OnboardingLayout({
 
       {/* Screen Title (Prominent, left-aligned, 32-34pt, confident sentence case) */}
       <View className="px-6 mb-3">
-        <Text className="font-sans font-medium text-[32px] sm:text-[34px] tracking-tight text-text leading-[38px] sm:leading-[40px]">
+        <Text className="font-sans font-medium text-[32px] sm:text-[34px] tracking-tight text-foreground leading-[38px] sm:leading-[40px]">
           {title}
         </Text>
+        {subtitle && (
+          <Text className="font-sans text-[15px] text-muted-foreground mt-1 leading-6 max-w-[340px]">
+            {subtitle}
+          </Text>
+        )}
       </View>
 
       {/* Main Content Area */}
@@ -147,7 +152,7 @@ export function OnboardingLayout({
       {/* Fixed / Sticky Bottom Actions */}
       {!hideFooter && (
         <View
-          className="px-6 pt-3 bg-canvas border-t border-border/40"
+          className="px-6 pt-3 bg-background border-t border-border/40"
           style={{
             paddingBottom: Math.max(insets.bottom, 24),
           }}
@@ -173,7 +178,7 @@ export function OnboardingLayout({
               hitSlop={8}
               className="py-3 items-center mt-1"
             >
-              <Text className="font-sans text-[15px] text-muted font-medium">
+              <Text className="font-sans text-[15px] text-muted-foreground font-medium">
                 {secondaryButtonText}
               </Text>
             </Pressable>
@@ -183,4 +188,3 @@ export function OnboardingLayout({
     </View>
   )
 }
-

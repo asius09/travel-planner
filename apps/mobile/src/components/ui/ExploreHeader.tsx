@@ -5,6 +5,7 @@ import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useThemeStore } from '@/store/themeStore'
+import { semanticColors } from '@/theme/colors'
 
 interface ExploreHeaderProps {
   children?: React.ReactNode
@@ -72,13 +73,13 @@ export function ExploreHeader({
         }}
       />
 
-      {/* 3. Bottom Seamless Canvas Fade into #F7F6F0 */}
+      {/* 3. Bottom Seamless Canvas Fade into background */}
       <LinearGradient
         colors={[
           'transparent',
-          'rgba(247, 246, 240, 0.18)',
-          'rgba(247, 246, 240, 0.72)',
-          '#F7F6F0',
+          'rgba(246, 244, 239, 0.18)',
+          'rgba(246, 244, 239, 0.72)',
+          semanticColors.background,
         ]}
         locations={[0.42, 0.7, 0.9, 1.0]}
         style={StyleSheet.absoluteFill}

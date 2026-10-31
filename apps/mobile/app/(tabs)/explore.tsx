@@ -151,7 +151,7 @@ export default function ExploreScreen() {
   // Loading skeleton
   if (isLoading && destinations.length === 0) {
     return (
-      <View key="explore-loading" className="flex-1 bg-canvas relative">
+      <View key="explore-loading" className="flex-1 bg-background relative">
         <ExploreHeader height={360} />
         <View style={{ paddingTop: insets.top + 104 }} className="flex-1 px-5 gap-4">
           <SearchBar
@@ -170,7 +170,7 @@ export default function ExploreScreen() {
   // Error state
   if (isError && destinations.length === 0) {
     return (
-      <View key="explore-error" className="flex-1 bg-canvas relative">
+      <View key="explore-error" className="flex-1 bg-background relative">
         <ExploreHeader height={360} />
         <View style={{ paddingTop: insets.top + 104 }} className="flex-1 justify-center px-5">
           <ErrorState
@@ -185,7 +185,7 @@ export default function ExploreScreen() {
   }
 
   return (
-    <View key="explore-content" className="flex-1 bg-canvas relative">
+    <View key="explore-content" className="flex-1 bg-background relative">
       {/* 1. Full-Bleed Top Travel Hero Image (Extends fully to top side behind status bar) */}
       <ExploreHeader height={360} />
 
@@ -245,7 +245,7 @@ export default function ExploreScreen() {
         {/* Active Filter Summary Bar */}
         {hasActiveFilters && (
           <View className="flex-row items-center justify-between px-5 mb-4">
-            <Text className="font-sans text-sm text-muted">
+            <Text className="font-sans text-sm text-muted-foreground">
               {totalCount} {totalCount === 1 ? 'place' : 'places'} found
             </Text>
             <Pressable
@@ -304,10 +304,10 @@ export default function ExploreScreen() {
                   className="px-5 mb-2.5 flex-row items-baseline justify-between"
                 >
                   <View>
-                    <Text className="font-sans font-semibold text-[21px] text-text tracking-tight">
+                    <Text className="font-sans font-semibold text-[21px] text-foreground tracking-tight">
                       Must-See Today
                     </Text>
-                    <Text className="font-sans text-xs text-muted mt-0.5">
+                    <Text className="font-sans text-xs text-muted-foreground mt-0.5">
                       AI Curated Places
                     </Text>
                   </View>
@@ -359,8 +359,8 @@ export default function ExploreScreen() {
         {/* End-of-List Automatic Loading Indicator */}
         {isFetchingNextPage && (
           <View className="py-6 items-center justify-center flex-row gap-2">
-            <ActivityIndicator size="small" color="#263F35" />
-            <Text className="font-sans text-xs text-muted">
+            <ActivityIndicator size="small" color="var(--primary)" />
+            <Text className="font-sans text-xs text-muted-foreground">
               Discovering more places...
             </Text>
           </View>
@@ -369,7 +369,7 @@ export default function ExploreScreen() {
         {/* End of list confirmation when all places loaded */}
         {!hasNextPage && destinations.length > 4 && (
           <View className="py-6 items-center justify-center">
-            <Text className="font-sans text-xs text-muted">
+            <Text className="font-sans text-xs text-muted-foreground">
               You've explored all destinations for now.
             </Text>
           </View>

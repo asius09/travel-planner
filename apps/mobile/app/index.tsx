@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { semanticColors } from '@/theme/colors'
 
 interface WelcomeSlide {
   id: string
@@ -174,7 +175,7 @@ export default function WelcomeScreen() {
               >
                 <View
                   className={`h-1.5 rounded-full ${
-                    isActive ? 'w-6 bg-[#D4F638]' : 'w-1.5 bg-white/40'
+                    isActive ? 'w-6 bg-accent' : 'w-1.5 bg-white/40'
                   }`}
                 />
               </Pressable>
@@ -188,17 +189,17 @@ export default function WelcomeScreen() {
             onPress={handlePlanTrip}
             accessibilityRole="button"
             accessibilityLabel="Plan a trip"
-            className="w-full h-[52px] rounded-full bg-[#D4F638] flex-row items-center justify-between px-3 shadow-md active:opacity-90"
+            className="w-full h-[52px] rounded-full bg-accent flex-row items-center justify-between px-3 shadow-md active:opacity-90"
           >
-            <View className="w-9 h-9 rounded-full bg-[#121614] items-center justify-center">
-              <Ionicons name="chevron-forward" size={18} color="#D4F638" />
+            <View className="w-9 h-9 rounded-full bg-primary items-center justify-center">
+              <Ionicons name="chevron-forward" size={18} color={semanticColors.accent} />
             </View>
-            <Text className="font-sans font-medium text-[16px] text-[#121614] tracking-tight">
+            <Text className="font-sans font-medium text-[16px] text-primary-foreground tracking-tight">
               Plan a trip
             </Text>
             <View className="flex-row items-center -space-x-1 mr-1">
-              <Ionicons name="chevron-forward" size={14} color="#121614" />
-              <Ionicons name="chevron-forward" size={14} color="#121614" />
+              <Ionicons name="chevron-forward" size={14} color={semanticColors.primary} />
+              <Ionicons name="chevron-forward" size={14} color={semanticColors.primary} />
             </View>
           </Pressable>
 

@@ -3,6 +3,7 @@
 import React from 'react'
 import { View, Text, Pressable } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { semanticColors } from '@/theme/colors'
 
 interface ErrorStateProps {
   title?: string
@@ -21,11 +22,11 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <View className={`flex-1 items-center justify-center p-8 gap-4 ${className}`}>
-      <View className="w-20 h-20 rounded-full items-center justify-center bg-[#FFF0F0]">
-        <Ionicons name="alert-circle-outline" size={36} color="#E57373" />
+      <View className="w-20 h-20 rounded-full items-center justify-center bg-destructive/10">
+        <Ionicons name="alert-circle-outline" size={36} color={semanticColors.destructive} />
       </View>
-      <Text className="font-medium text-xl text-center text-text">{title}</Text>
-      <Text className="font-normal text-[15px] text-center text-muted leading-[22px] max-w-[280px]">
+      <Text className="font-medium text-xl text-center text-foreground">{title}</Text>
+      <Text className="font-normal text-[15px] text-center text-muted-foreground leading-[22px] max-w-[280px]">
         {message}
       </Text>
       {onRetry ? (

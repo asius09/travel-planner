@@ -3,6 +3,7 @@
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
+import { semanticColors } from '@/theme/colors'
 
 interface ScreenFadeProps {
   height?: number
@@ -50,12 +51,12 @@ export function ScreenFade({
                 '#0E1410',
               ]
             : [
-                'rgba(247, 246, 240, 0)',
-                'rgba(247, 246, 240, 0.03)',
-                'rgba(247, 246, 240, 0.16)',
-                'rgba(247, 246, 240, 0.48)',
-                'rgba(247, 246, 240, 0.84)',
-                '#F7F6F0',
+                'rgba(246, 244, 239, 0)',
+                'rgba(246, 244, 239, 0.03)',
+                'rgba(246, 244, 239, 0.16)',
+                'rgba(246, 244, 239, 0.48)',
+                'rgba(246, 244, 239, 0.84)',
+                semanticColors.background,
               ]
         }
         locations={[0, 0.35, 0.6, 0.8, 0.92, 1.0]}

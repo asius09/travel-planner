@@ -53,17 +53,37 @@ export const verifications = pgTable('verifications', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
-// User preferences
+// User preferences. The four answer columns are nullable so onboarding can
+// persist partial progress one step at a time; completion is tracked
+// server-side so a failed save can never falsely complete the flow.
 export const userPreferences = pgTable('user_preferences', {
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).primaryKey(),
-  travelMood: varchar('travel_mood', { length: 20 }).notNull(),
-  duration: varchar('duration', { length: 20 }).notNull(),
-  budget: varchar('budget', { length: 20 }).notNull(),
-  travelParty: varchar('travel_party', { length: 20 }).notNull(),
+  travelMood: varchar('travel_mood', { length: 20 }),
+  duration: varchar('duration', { length: 20 }),
+  budget: varchar('budget', { length: 20 }),
+  travelParty: varchar('travel_party', { length: 20 }),
   currency: varchar('currency', { length: 3 }).notNull().default('USD'),
   regionCode: varchar('region_code', { length: 2 }),
+  onboardingCompleted: boolean('onboarding_completed').default(false).notNull(),
+  onboardingFlowVersion: integer('onboarding_flow_version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// Ordered destination image collection. Positions are unique per destination so
+// the detail gallery keeps a stable order; duplicates within a destination are
+// impossible.
+export const destinationImages = pgTable('destination_images', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  destinationId: uuid('destination_id').references(() => destinations.id, { onDelete: 'cascade' }).notNull(),
+  url: text('url').notNull(),
+  alt: text('alt'),
+  position: integer('position').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  destinationPositionUnique: uniqueIndex('destination_images_destination_position_unique').on(table.destinationId, table.position),
+  destinationIdIdx: index('destination_images_destination_id_idx').on(table.destinationId),
+}))
 
 // Destinations
 export const destinations = pgTable('destinations', {
@@ -120,6 +140,7 @@ export const tripItems = pgTable('trip_items', {
 // Zod schemas for validation
 export const insertUserPreferencesSchema = createInsertSchema(userPreferences)
 export const insertDestinationSchema = createInsertSchema(destinations)
+export const insertDestinationImageSchema = createInsertSchema(destinationImages)
 export const insertTripSchema = createInsertSchema(trips)
 export const insertTripItemSchema = createInsertSchema(tripItems)
 
@@ -127,11 +148,13 @@ export const insertTripItemSchema = createInsertSchema(tripItems)
 export type User = typeof users.$inferSelect
 export type UserPreferences = typeof userPreferences.$inferSelect
 export type Destination = typeof destinations.$inferSelect
+export type DestinationImage = typeof destinationImages.$inferSelect
 export type Trip = typeof trips.$inferSelect
 export type TripItem = typeof tripItems.$inferSelect
 
 export type NewUserPreferences = typeof userPreferences.$inferInsert
 export type NewDestination = typeof destinations.$inferInsert
+export type NewDestinationImage = typeof destinationImages.$inferInsert
 export type NewTrip = typeof trips.$inferInsert
 export type NewTripItem = typeof tripItems.$inferInsert
 // Relations (used by Drizzle's relational queries, e.g. db.query.tripItems)
@@ -139,6 +162,17 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
   trips: many(trips),
+}))
+
+export const destinationsRelations = relations(destinations, ({ many }) => ({
+  images: many(destinationImages),
+}))
+
+export const destinationImagesRelations = relations(destinationImages, ({ one }) => ({
+  destination: one(destinations, {
+    fields: [destinationImages.destinationId],
+    references: [destinations.id],
+  }),
 }))
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({

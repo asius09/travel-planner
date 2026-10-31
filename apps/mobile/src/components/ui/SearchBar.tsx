@@ -3,6 +3,7 @@
 import React from 'react'
 import { TextInput, View, Pressable, type StyleProp, type ViewStyle, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { semanticColors } from '@/theme/colors'
 
 interface SearchBarProps {
   placeholder?: string
@@ -30,9 +31,9 @@ export function SearchBar({
       className={`flex-row items-center bg-surface rounded-full border border-border px-4 h-[48px] ${className}`}
       style={style}
     >
-      <Ionicons name="search" size={19} color="#777F78" />
+      <Ionicons name="search" size={19} color={semanticColors.mutedForeground} />
       <TextInput
-        className="flex-1 font-sans text-[15px] text-text ml-2.5"
+        className="flex-1 font-sans text-[15px] text-foreground ml-2.5"
         style={{
           paddingVertical: 0,
           paddingHorizontal: 0,
@@ -40,7 +41,7 @@ export function SearchBar({
           textAlignVertical: 'center',
         }}
         placeholder={placeholder}
-        placeholderTextColor="#777F78"
+        placeholderTextColor={semanticColors.mutedForeground}
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit ? () => onSubmit(value) : undefined}
@@ -56,7 +57,7 @@ export function SearchBar({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           className="p-1 active:opacity-60"
         >
-          <Ionicons name="close-circle" size={18} color="#777F78" />
+          <Ionicons name="close-circle" size={18} color={semanticColors.mutedForeground} />
         </Pressable>
       ) : null}
     </View>

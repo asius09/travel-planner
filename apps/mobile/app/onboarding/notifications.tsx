@@ -31,14 +31,6 @@ const NOTIFICATION_PREVIEW: PreviewNotification = {
   icon: 'calendar',
 }
 
-// Mirrors the `canvas` semantic token in tailwind.config.ts. Needed as a literal
-// because expo-linear-gradient requires raw color strings (same pattern as the
-// fadeColor prop already used by WheelPicker / RulerPicker).
-const CANVAS = '#F7F6F0'
-
-// Phone silhouette proportions (width : height) and composition clamps.
-const PHONE_RATIO = 1.55
-
 function NotificationPreviewCard({
   item,
   softColor,
@@ -49,7 +41,7 @@ function NotificationPreviewCard({
   primaryColor: string
 }) {
   return (
-    <View className="rounded-card border border-border bg-surface p-4 shadow-lg shadow-black/10">
+    <View className="rounded-card border border-border bg-card p-4 shadow-lg shadow-black/10">
       <View className="flex-row items-center">
         <View
           className="mr-3.5 h-11 w-11 items-center justify-center rounded-input"
@@ -61,15 +53,15 @@ function NotificationPreviewCard({
         <View className="flex-1">
           <View className="flex-row items-center">
             <Text
-              className="flex-1 font-sans font-semibold text-[15px] text-text"
+              className="flex-1 font-sans font-semibold text-[15px] text-foreground"
               numberOfLines={1}
             >
               {item.title}
             </Text>
-            <Text className="ml-2 shrink-0 font-sans text-[11px] text-muted">{item.time}</Text>
+            <Text className="ml-2 shrink-0 font-sans text-[11px] text-muted-foreground">{item.time}</Text>
           </View>
           <Text
-            className="mt-0.5 font-sans text-[13px] leading-[18px] text-muted"
+            className="mt-0.5 font-sans text-[13px] leading-[18px] text-muted-foreground"
             numberOfLines={2}
           >
             {item.body}
@@ -142,6 +134,7 @@ export default function NotificationsPermissionScreen() {
 
   // Responsive composition: the phone scales with the window and stays within
   // safe bounds on small devices. No hardcoded device dimensions.
+  const PHONE_RATIO = 1.55
   const phoneWidth = Math.min(windowWidth * 0.55, 216, (windowHeight * 0.42) / PHONE_RATIO)
   const phoneHeight = phoneWidth * PHONE_RATIO
   const cardWidth = Math.min(phoneWidth + 72, windowWidth - 48)
@@ -234,7 +227,7 @@ export default function NotificationsPermissionScreen() {
 
             {/* Gradient fade so the open phone bottom dissolves into the canvas */}
             <LinearGradient
-              colors={[`${CANVAS}00`, `${CANVAS}66`, `${CANVAS}F2`, CANVAS]}
+              colors={['var(--background)00', 'var(--background)66', 'var(--background)F2', 'var(--background)']}
               locations={[0, 0.5, 0.85, 1]}
               style={{
                 position: 'absolute',
@@ -251,7 +244,7 @@ export default function NotificationsPermissionScreen() {
 
         {/* Reassurance note */}
         <View className="items-center pb-1">
-          <Text className="px-4 text-center font-sans text-xs text-muted">
+          <Text className="px-4 text-center font-sans text-xs text-muted-foreground">
             You can customize or silence notifications anytime in your account settings.
           </Text>
         </View>

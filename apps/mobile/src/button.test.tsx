@@ -10,7 +10,7 @@ describe('Button Component', () => {
     expect(primary).toContain('h-11')
 
     const secondary = getButtonClasses({ variant: 'secondary', size: 'lg' })
-    expect(secondary).toContain('bg-accent')
+    expect(secondary).toContain('bg-secondary')
     expect(secondary).toContain('h-[52px]')
 
     const outline = getButtonClasses({ variant: 'outline', size: 'sm' })
@@ -24,11 +24,11 @@ describe('Button Component', () => {
   it('should generate correct typography classes matching design specs', () => {
     const smText = getButtonTextClasses({ variant: 'primary', size: 'sm' })
     expect(smText).toContain('text-[13.5px]')
-    expect(smText).toContain('text-white')
+    expect(smText).toContain('text-primary-foreground')
 
     const mdText = getButtonTextClasses({ variant: 'secondary', size: 'md' })
     expect(mdText).toContain('text-[15px]')
-    expect(mdText).toContain('text-text')
+    expect(mdText).toContain('text-secondary-foreground')
 
     const lgText = getButtonTextClasses({ variant: 'outline', size: 'lg' })
     expect(lgText).toContain('text-[16px]')
@@ -37,9 +37,9 @@ describe('Button Component', () => {
 
   it('should resolve correct semantic spinner colors for each variant', () => {
     expect(getSpinnerColor('primary')).toBe('#FFFFFF')
-    expect(getSpinnerColor('secondary')).toBe('#202822')
-    expect(getSpinnerColor('outline')).toBe('#263F35')
-    expect(getSpinnerColor('ghost')).toBe('#263F35')
+    expect(getSpinnerColor('secondary')).toBe('#252B2D')
+    expect(getSpinnerColor('outline')).toBe('#252B2D')
+    expect(getSpinnerColor('ghost')).toBe('#252B2D')
     expect(getSpinnerColor('primary', '#E11D48')).toBe('#E11D48')
   })
 

@@ -3,19 +3,20 @@ import type { Context } from 'hono'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { authSecurity, type AppEnv } from '../types'
 import { db } from '../db'
-import { userPreferences, insertUserPreferencesSchema } from '../db/schema'
+import { userPreferences } from '../db/schema'
 import { eq } from 'drizzle-orm'
-import { authMiddleware } from '../middleware'
-import { userPreferencesSchema } from '@travel-planner/shared'
+import { userPreferencesUpdateSchema } from '@travel-planner/shared'
 
 const preferencesResponseSchema = z.object({
   userId: z.string().uuid(),
-  travelMood: z.string(),
-  duration: z.string(),
-  budget: z.string(),
-  travelParty: z.string(),
+  travelMood: z.string().nullable(),
+  duration: z.string().nullable(),
+  budget: z.string().nullable(),
+  travelParty: z.string().nullable(),
   currency: z.string(),
   regionCode: z.string().nullable(),
+  onboardingCompleted: z.boolean(),
+  onboardingFlowVersion: z.number(),
   updatedAt: z.string().datetime(),
 })
 
@@ -27,12 +28,27 @@ const errorResponseSchema = z.object({
 
 export const preferencesRoutes = new OpenAPIHono<AppEnv>()
 
+function serializePreferences(prefs: typeof userPreferences.$inferSelect) {
+  return {
+    userId: prefs.userId,
+    travelMood: prefs.travelMood ?? null,
+    duration: prefs.duration ?? null,
+    budget: prefs.budget ?? null,
+    travelParty: prefs.travelParty ?? null,
+    currency: prefs.currency,
+    regionCode: prefs.regionCode ?? null,
+    onboardingCompleted: prefs.onboardingCompleted,
+    onboardingFlowVersion: prefs.onboardingFlowVersion,
+    updatedAt: prefs.updatedAt.toISOString(),
+  }
+}
+
 // Get current user preferences
 preferencesRoutes.openapi(
   createRoute({
     method: 'get',
     path: '/preferences',
-    summary: 'Get current user preferences',
+    summary: 'Get current user preferences and onboarding status',
     security: authSecurity,
     responses: {
       500: {
@@ -43,8 +59,8 @@ preferencesRoutes.openapi(
           },
         },
       },
-            200: {
-        description: 'User preferences',
+      200: {
+        description: 'User preferences, or null when the user has no saved answers yet',
         content: {
           'application/json': {
             schema: preferencesResponseSchema.nullable(),
@@ -64,25 +80,21 @@ preferencesRoutes.openapi(
   }),
   async (c) => {
     const user = c.get('user')
-    
+
     if (!user) {
       return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
     }
-    
+
     try {
       const prefs = await db.query.userPreferences.findFirst({
         where: eq(userPreferences.userId, user.id),
       })
-      
+
       if (!prefs) {
         return c.json(null, 200)
       }
-      
-      return c.json({
-        ...prefs,
-        regionCode: prefs.regionCode ?? null,
-        updatedAt: prefs.updatedAt.toISOString(),
-      }, 200)
+
+      return c.json(serializePreferences(prefs), 200)
     } catch (error) {
       console.error('Preferences fetch error:', error)
       return c.json({ error: 'Failed to fetch preferences', code: 'FETCH_FAILED' }, 500)
@@ -90,39 +102,29 @@ preferencesRoutes.openapi(
   }
 )
 
-// Create or update preferences (supports both PUT and POST)
-
-/** Body accepted by the update routes (server-managed columns excluded). */
-const preferencesUpdateBodySchema = userPreferencesSchema.omit({
-  userId: true,
-  updatedAt: true,
-})
-
-type PreferencesUpdateBody = z.infer<typeof preferencesUpdateBodySchema>
-
 /**
- * Persists the caller's preferences, creating or updating the row as needed.
- * Kept separate from the HTTP layer so the PUT and POST routes share it.
+ * Persists the caller's partial answers. Only the provided fields are written,
+ * so each onboarding step can save its own answer without overwriting others.
+ * The upsert on the primary key keeps concurrent saves race-free.
  */
-async function persistPreferences(userId: string, body: PreferencesUpdateBody) {
-  const existing = await db.query.userPreferences.findFirst({
-    where: eq(userPreferences.userId, userId),
-  })
-
-  if (existing) {
-    const [updated] = await db
-      .update(userPreferences)
-      .set({ ...body, updatedAt: new Date() })
-      .where(eq(userPreferences.userId, userId))
-      .returning()
-    return updated
-  }
-
-  const [created] = await db
+async function persistPreferences(userId: string, body: Partial<typeof userPreferences.$inferInsert>) {
+  const [prefs] = await db
     .insert(userPreferences)
     .values({ userId, ...body })
+    .onConflictDoUpdate({
+      target: userPreferences.userId,
+      set: {
+        ...(body.travelMood !== undefined ? { travelMood: body.travelMood } : {}),
+        ...(body.duration !== undefined ? { duration: body.duration } : {}),
+        ...(body.budget !== undefined ? { budget: body.budget } : {}),
+        ...(body.travelParty !== undefined ? { travelParty: body.travelParty } : {}),
+        ...(body.currency !== undefined ? { currency: body.currency } : {}),
+        ...(body.regionCode !== undefined ? { regionCode: body.regionCode } : {}),
+        updatedAt: new Date(),
+      },
+    })
     .returning()
-  return created
+  return prefs
 }
 
 const updatePreferencesHandler = async (c: Context<AppEnv>) => {
@@ -134,94 +136,91 @@ const updatePreferencesHandler = async (c: Context<AppEnv>) => {
 
   // `openapi` validates against the route schema before this handler runs, so
   // parsing here is a no-op at runtime but keeps the body statically typed.
-  const body = preferencesUpdateBodySchema.parse(await c.req.json())
+  const body = userPreferencesUpdateSchema.parse(await c.req.json())
 
   try {
     const prefs = await persistPreferences(user.id, body)
-
-    return c.json(
-      {
-        ...prefs,
-        regionCode: prefs.regionCode ?? null,
-        updatedAt: prefs.updatedAt.toISOString(),
-      },
-      200,
-    )
+    return c.json(serializePreferences(prefs), 200)
   } catch (error) {
     console.error('Preferences update error:', error)
     return c.json({ error: 'Failed to update preferences', code: 'UPDATE_FAILED' }, 500)
   }
 }
 
+const updateRouteConfig = {
+  summary: 'Save onboarding answers (partial update)',
+  security: authSecurity,
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: userPreferencesUpdateSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    500: {
+      description: 'Internal server error',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    200: {
+      description: 'Preferences saved',
+      content: {
+        'application/json': {
+          schema: preferencesResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: 'Validation error',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+  tags: ['Preferences'],
+}
+
 preferencesRoutes.openapi(
   createRoute({
+    ...updateRouteConfig,
     method: 'put',
     path: '/preferences',
-    summary: 'Create or update user preferences',
-    security: authSecurity,
-    request: {
-      body: {
-        content: {
-          'application/json': {
-            schema: preferencesUpdateBodySchema,
-          },
-        },
-      },
-    },
-    responses: {
-      500: {
-        description: 'Internal server error',
-        content: {
-          'application/json': {
-            schema: errorResponseSchema,
-          },
-        },
-      },
-      200: {
-        description: 'Preferences updated',
-        content: {
-          'application/json': {
-            schema: preferencesResponseSchema,
-          },
-        },
-      },
-      400: {
-        description: 'Validation error',
-        content: {
-          'application/json': {
-            schema: errorResponseSchema,
-          },
-        },
-      },
-      401: {
-        description: 'Unauthorized',
-        content: {
-          'application/json': {
-            schema: errorResponseSchema,
-          },
-        },
-      },
-    },
-    tags: ['Preferences'],
   }),
   updatePreferencesHandler
 )
 
 preferencesRoutes.openapi(
   createRoute({
+    ...updateRouteConfig,
     method: 'post',
     path: '/preferences',
-    summary: 'Create user preferences',
+  }),
+  updatePreferencesHandler
+)
+
+// Complete onboarding
+preferencesRoutes.openapi(
+  createRoute({
+    method: 'post',
+    path: '/preferences/complete',
+    summary: 'Mark onboarding as completed on the server',
     security: authSecurity,
-    request: {
-      body: {
-        content: {
-          'application/json': {
-            schema: preferencesUpdateBodySchema,
-          },
-        },
-      },
-    },
     responses: {
       500: {
         description: 'Internal server error',
@@ -232,18 +231,10 @@ preferencesRoutes.openapi(
         },
       },
       200: {
-        description: 'Preferences updated',
+        description: 'Onboarding marked as completed',
         content: {
           'application/json': {
             schema: preferencesResponseSchema,
-          },
-        },
-      },
-      400: {
-        description: 'Validation error',
-        content: {
-          'application/json': {
-            schema: errorResponseSchema,
           },
         },
       },
@@ -255,8 +246,54 @@ preferencesRoutes.openapi(
           },
         },
       },
+      409: {
+        description: 'Onboarding answers are incomplete',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
     },
     tags: ['Preferences'],
   }),
-  updatePreferencesHandler
+  async (c) => {
+    const user = c.get('user')
+
+    if (!user) {
+      return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
+    }
+
+    try {
+      const existing = await db.query.userPreferences.findFirst({
+        where: eq(userPreferences.userId, user.id),
+      })
+
+      if (
+        !existing?.travelMood ||
+        !existing.duration ||
+        !existing.budget ||
+        !existing.travelParty
+      ) {
+        return c.json(
+          {
+            error: 'Onboarding answers are incomplete',
+            code: 'ONBOARDING_INCOMPLETE',
+          },
+          409
+        )
+      }
+
+      const [prefs] = await db
+        .update(userPreferences)
+        .set({ onboardingCompleted: true, updatedAt: new Date() })
+        .where(eq(userPreferences.userId, user.id))
+        .returning()
+
+      return c.json(serializePreferences(prefs), 200)
+    } catch (error) {
+      console.error('Onboarding completion error:', error)
+      return c.json({ error: 'Failed to complete onboarding', code: 'COMPLETE_FAILED' }, 500)
+    }
+  }
 )

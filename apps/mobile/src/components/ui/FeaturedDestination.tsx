@@ -10,6 +10,7 @@ import { useTripStore } from '@/store/tripStore'
 import { useThemeStore } from '@/store/themeStore'
 import * as Haptics from 'expo-haptics'
 import type { Destination } from '@travel-planner/shared'
+import { semanticColors } from '@/theme/colors'
 
 interface FeaturedDestinationProps {
   destination: Destination
@@ -50,7 +51,7 @@ export function FeaturedDestination({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Featured destination: ${destination.name}, ${destination.country}`}
-      className={`rounded-[28px] overflow-hidden bg-surface border border-border shadow-sm active:opacity-95 ${className}`}
+      className={`rounded-[28px] overflow-hidden bg-card border border-border shadow-sm active:opacity-95 ${className}`}
     >
       <View className="relative h-[280px] w-full">
         <ExpoImage
@@ -62,7 +63,7 @@ export function FeaturedDestination({
 
         {/* Ambient bottom gradient mask */}
         <LinearGradient
-          colors={['transparent', 'rgba(18, 24, 20, 0.4)', 'rgba(18, 24, 20, 0.88)']}
+          colors={['transparent', semanticColors.imageOverlay, semanticColors.imageOverlay]}
           locations={[0.3, 0.65, 1.0]}
           style={StyleSheet.absoluteFill}
         />
@@ -70,7 +71,7 @@ export function FeaturedDestination({
         {/* Top Badges */}
         <View className="absolute top-4 left-4 right-4 flex-row items-center justify-between z-10">
           <View className="bg-white/85 px-3 py-1.5 rounded-full border border-white/60">
-            <Text className="font-sans font-medium text-[11px] text-[#202822]">
+            <Text className="font-sans font-medium text-[11px] text-foreground">
               Featured discovery
             </Text>
           </View>
@@ -87,7 +88,7 @@ export function FeaturedDestination({
             <Ionicons
               name={isSaved ? 'bookmark' : 'bookmark-outline'}
               size={18}
-              color={isSaved ? '#FFFFFF' : '#202822'}
+              color={isSaved ? semanticColors.primaryForeground : semanticColors.foreground}
             />
           </Pressable>
         </View>
@@ -103,7 +104,7 @@ export function FeaturedDestination({
 
           <View className="flex-row items-center justify-between mt-3 pt-2.5 border-t border-white/20">
             <View className="flex-row items-center gap-1.5">
-              <Ionicons name="time-outline" size={14} color="#FFFFFF" />
+              <Ionicons name="time-outline" size={14} color={semanticColors.white} />
               <Text className="font-sans text-xs text-white/90">
                 {destination.suggestedDaysMin}–{destination.suggestedDaysMax} days
               </Text>
