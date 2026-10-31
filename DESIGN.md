@@ -84,6 +84,10 @@ Travel mood personalizes the app's accent tokens and Explore hero imagery withou
 - **`body`:** Primary reading copy, input text, button labels. Regular to medium weight, comfortable line spacing.
 - **`metadata`:** Subtitles, trip estimates, tag pills, helper copy. Compact, clear proportions with tabular numerals for financial figures.
 
+### Casing & Tracking Guidelines
+- **No Uppercase:** Never use all-caps or uppercase transformations (`uppercase`, `text-transform: uppercase`) anywhere in the application (including section labels, badges, overlines, and metadata) unless explicitly requested. Use natural sentence case or title case.
+- **No Wider Tracking:** Never use wide or expanded tracking (`tracking-wide`, `tracking-wider`, `tracking-widest`). Geist Sans has calibrated optical bounds; headings should use standard or slightly negative tracking (`tracking-tight`), and body copy or labels should use standard default tracking. All text containers should render in clean, inline bounding boxes without layout shift.
+
 ---
 
 ## 4. Logo and Iconography
@@ -104,7 +108,7 @@ The Outta logomark is an editorial wordmark set in Geist Sans with distinctive t
 
 ### Illustration Direction
 - Prefer authentic destination photography for travel discovery and concrete places.
-- Use clean, minimal vector graphics for abstract concepts in onboarding (e.g. route map paths for Location, layered preview cards for Notifications, semicircular gauge for Budget).
+- Use clean, minimal vector graphics for abstract concepts in onboarding (e.g. route map paths for Location, a phone mockup with a single preview notification for Notifications, semicircular gauge for Budget).
 - Illustrations must use the semantic palette (`surface`, `border`, `mood.primary`, `mood.accent`).
 
 ---
@@ -183,35 +187,53 @@ The Outta logomark is an editorial wordmark set in Geist Sans with distinctive t
 
 ### Onboarding Flow (`/onboarding/*`)
 Mandatory authenticated flow. Single question per screen, single-tap answers, working Back navigation:
-1. **Travel Mood (`/onboarding/mood`):** 2×2 photographic cards (Nature, City & culture, Beach, Adventure).
-2. **Trip Duration (`/onboarding/duration`):** Interactive day stepper (+/-) with live central duration text morphing ("3 days", "1 week", etc.).
-3. **Trip Budget (`/onboarding/budget`):** Semicircular segmented gauge synchronized with 4 budget tier cards.
-4. **Travel Companions (`/onboarding/travel-party`):** 2×2 grid with inclusive icons (Solo, Couple, Friends, Family).
-5. **Location Permission (`/onboarding/location`):** Stylized route map graphic. Explains local discovery benefit. Actions: "Enable location" and "Not now".
-6. **Notification Permission (`/onboarding/notifications`):** Cascading notification preview cards. Explains trip update benefits. Actions: "Enable notifications" and "Maybe later".
+- **Typography Scale & Case:** Natural sentence case throughout. Uppercase text is strictly prohibited across all onboarding screens (titles, subtitles, labels, buttons, step indicators, accessibility labels). Page headings are left-aligned, prominent (~32–36pt, `font-medium`, tight spacing to interactive controls), and rendered as standard text to support natural line wrapping and accessibility scaling. Dynamic morphing text (`TextMorph`) is reserved exclusively for actively changing numbers and values (durations, budgets).
+- **Motion & Accessibility:** Coordinated, subtle entrance animations run once on initial mount (respecting reduced-motion preferences); zero artificial delay before interaction.
+1. **Destination Preferences (`/onboarding/mood`):** Two-column image-led grid (Nature, City & culture, Beach, Adventure). Photography is dominant with consistent corner radii (24px). Balanced bottom gradient (`transparent` to dark) ensures crystal-clear readability across all lighting conditions. Destination titles (~22–24pt) and descriptions (~15–17pt) near card base. Unselected cards omit heavy borders and radio circles; selected cards feature a restrained forest green outline (`2.5px`) with a compact upper-corner check indicator.
+2. **Trip Duration (`/onboarding/duration`):** Interactive vertical 3D wheel selector with tactile haptics, steppers, and live central duration text morphing ("3 days", "1 week", etc.) with sentence-case target label.
+3. **Trip Budget (`/onboarding/budget`):** Semicircular segmented gauge with smooth motion-path fill, synchronized with full-width vertical wheel selector (clear neighbor readability, zero bold weights).
+4. **Travel Companions (`/onboarding/travel-party`):** Two-column image-led grid sharing the exact visual language as destination preferences (Solo, Couple, Friends, Family). Relevant photography, balanced bottom gradient, titles (~22–24pt), descriptions (~15–17pt), corner radii (24px), restrained forest green outline (`2.5px`), and compact upper-corner check indicator.
+5. **Location Permission (`/onboarding/location`):** Map-inspired tile with a central location pin and a restrained discovery radius. Explains local discovery benefit. Actions: "Enable location" and "Not now".
+6. **Notification Permission (`/onboarding/notifications`):** Phone mockup illustration (open at the bottom, fading into the canvas) with a single "Trip countdown" preview notification emerging from the screen. Explains trip update benefits. Actions: "Enable notifications" and "Maybe later".
 
 ### Explore (`/(tabs)/explore`)
-- Mood-adaptive hero banner reflecting the user's selected travel mood.
-- Instant search bar with clear button.
-- Horizontal category chips ("All", "Nature", "City", "Beach", "Adventure").
-- Curated sections ("Picked for your mood", "Good for a short escape", "Explore somewhere different").
-- Visible "Personalize" action allowing users to adjust mood anytime.
+- Profile-oriented header with circular avatar (`ProfileAvatar`), time-based greeting, and travel preference summary tag.
+- Mood-adaptive hero banner (`FeaturedDestination`, photographic opening) with targeted bottom-only gradient mask and integrated search bar.
+- Horizontally scrollable category pills ("All", "Nature", "City", "Beach", "Adventure") with tactile selection feedback and WCAG AA contrast.
+- Compact bento-style `TripSummary` displayed when saved destinations exist, linking directly to the active itinerary.
+- Editorial discovery sections: "Picked for your mood", "Curated highlight", "Destinations worth exploring", and "Good for a quick escape".
+- Editorial destination cards (`DestinationCard`) supporting both standard and compact layouts with inline save/bookmark action.
+- Subtle lower-edge scroll indicator fade (`ScreenFade`) respecting safe areas.
+
+### Profile (`/profile`)
+- Dedicated profile and identity screen accessible through the avatar in Explore and from Settings.
+- Gradient avatar placeholder with user initials or minimal profile mark.
+- User identity display and editable display name.
+- Compact bento-style `TripSummary` reusing the same visual language as Explore.
+- Comprehensive `PreferenceSummary` enabling inline, in-place updates to travel mood, duration, budget, and travel party without restarting onboarding or losing saved trip data.
+- Account actions including authenticated session sign out.
 
 ### Destination Details (`/destination/[id]`)
-- Full-bleed hero photography with safe area back button.
-- Clear metadata row: country/region, duration recommendation, and labeled budget estimate.
-- Descriptive editorial overview and highlights.
-- Fixed bottom action bar: "Add to trip" (or "Added" with "View trip" navigation).
+- Full-bleed hero photography with floating, translucent circular back button (top left) and bookmark button (top right) respecting safe areas.
+- Clear metadata: location/region, suggested stay duration, category chips, and descriptive editorial overview.
+- Clean highlights list with subtle affirmative check badges.
+- Labeled estimated budget card with clear currency basis and non-booking disclaimer.
+- Fixed bottom action bar with safe area inset padding: "Add to trip" (or "Saved in trip • View itinerary").
 
 ### My Trip (`/(tabs)/trip`)
-- Trip summary card: derived total budget estimate, total destination count, and currency basis.
-- Reorderable list of saved destinations with explicit reorder actions and remove controls.
-- Empty state: "Every great trip starts somewhere" with an "Explore destinations" CTA.
+- Clean header: "Your trip, taking shape."
+- Bento-style summary card: derived total budget estimate, total destination count, and currency basis.
+- Lightweight, readable itinerary list (`ItineraryRow`) with position badges, destination thumbnails, and location information.
+- Inline reordering controls (up/down chevron controls) and distinct destructive remove action with confirmation.
+- Empty state (`EmptyTripState`): centered travel visual, encouraging copy, and primary "Explore destinations" CTA.
+- Floating "Add another place" button at bottom.
 
 ### Settings & Preferences (`/(tabs)/settings`)
-- In-place preference editing for travel mood, duration, budget, travel party, and currency.
-- Modifying preferences updates recommendation weights and accent styling immediately without clearing or reordering saved trip destinations.
-- Sign out action with session clearing and return to Welcome.
+- Profile entry point at top linking directly to Profile and Preferences.
+- In-place preference editing for travel mood, duration, budget, and travel party.
+- Grouped iOS-style permission switches (Location, Notifications) with clear explanatory labels.
+- Data and safety management: distinct destructive actions for "Clear my trip" and "Reset travel preferences" with confirmation dialogs.
+- Clean sign out action.
 
 ---
 

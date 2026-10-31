@@ -13,10 +13,9 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button } from '@/components/ui/Button'
-import { TextMorph } from '@/components/ui'
 
 interface WelcomeSlide {
   id: string
@@ -146,20 +145,14 @@ export default function WelcomeScreen() {
         ]}
         pointerEvents="box-none"
       >
-        {/* Fluid Morphing Title & Subtitle with Maintained Font Size & Clean Copy */}
+        {/* Confident, Readable Title & Subtitle with Natural Typography Wrapping */}
         <View className="mb-4 px-1">
-          <TextMorph
-            className="font-sans text-[28px] leading-[34px] font-semibold text-white tracking-normal"
-            duration={240}
-          >
+          <Text className="font-sans text-[28px] sm:text-[30px] leading-[34px] sm:leading-[36px] font-medium text-white tracking-tight">
             {currentSlide.title}
-          </TextMorph>
-          <TextMorph
-            className="font-sans text-[14px] leading-[20px] text-white/75 mt-1.5 max-w-[330px]"
-            duration={240}
-          >
+          </Text>
+          <Text className="font-sans text-[15px] leading-[22px] text-white/80 mt-2 max-w-[340px] font-normal">
             {currentSlide.subtitle}
-          </TextMorph>
+          </Text>
         </View>
 
         {/* Carousel Indicator Dots with Clean Hitspots */}
@@ -181,7 +174,7 @@ export default function WelcomeScreen() {
               >
                 <View
                   className={`h-1.5 rounded-full ${
-                    isActive ? 'w-6 bg-[#D7E58A]' : 'w-1.5 bg-white/40'
+                    isActive ? 'w-6 bg-[#D4F638]' : 'w-1.5 bg-white/40'
                   }`}
                 />
               </Pressable>
@@ -191,16 +184,23 @@ export default function WelcomeScreen() {
 
         {/* Full-Width Centered Action Controls */}
         <View className="gap-2.5 w-full items-center">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
+          <Pressable
             onPress={handlePlanTrip}
+            accessibilityRole="button"
             accessibilityLabel="Plan a trip"
-            className="rounded-2xl shadow-md"
+            className="w-full h-[52px] rounded-full bg-[#D4F638] flex-row items-center justify-between px-3 shadow-md active:opacity-90"
           >
-            Plan a trip
-          </Button>
+            <View className="w-9 h-9 rounded-full bg-[#121614] items-center justify-center">
+              <Ionicons name="chevron-forward" size={18} color="#D4F638" />
+            </View>
+            <Text className="font-sans font-medium text-[16px] text-[#121614] tracking-tight">
+              Plan a trip
+            </Text>
+            <View className="flex-row items-center -space-x-1 mr-1">
+              <Ionicons name="chevron-forward" size={14} color="#121614" />
+              <Ionicons name="chevron-forward" size={14} color="#121614" />
+            </View>
+          </Pressable>
 
           <Pressable
             onPress={handleSignIn}

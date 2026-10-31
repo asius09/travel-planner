@@ -7,3 +7,5 @@ allowBuilds:
   es5-ext: true
   esbuild: true
   unrs-resolver: true
+patchedDependencies:
+  react-native-css-interop: patches/react-native-css-interop.patch

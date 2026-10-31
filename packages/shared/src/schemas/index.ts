@@ -32,6 +32,7 @@ export const destinationSchema = z.object({
   suggestedDaysMax: z.number().int().positive(),
   highlights: z.array(z.string()).min(1),
   heroImage: z.string().url(),
+  galleryImages: z.array(z.string().url()).optional(),
   imageCredit: z.string().optional(),
   isPublished: z.boolean(),
   popularity: z.number().int().nonnegative(),

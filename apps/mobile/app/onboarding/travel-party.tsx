@@ -1,9 +1,19 @@
 'use client'
 
-import React, { useRef } from 'react'
-import { View, Text, Pressable, Animated } from 'react-native'
+import React, { useRef, useEffect, useState } from 'react'
+import {
+  View,
+  Text,
+  Pressable,
+  Animated,
+  AccessibilityInfo,
+  useWindowDimensions,
+} from 'react-native'
 import { useRouter } from 'expo-router'
+import { Image as ExpoImage } from 'expo-image'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { OnboardingLayout } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import type { TravelParty } from '@travel-planner/shared'
@@ -12,8 +22,7 @@ interface TravelPartyOption {
   value: TravelParty
   label: string
   subtitle: string
-  icon: keyof typeof Ionicons.glyphMap
-  badgeCount: string
+  image: string
 }
 
 const PARTY_OPTIONS: TravelPartyOption[] = [
@@ -21,48 +30,83 @@ const PARTY_OPTIONS: TravelPartyOption[] = [
     value: 'solo',
     label: 'Solo',
     subtitle: 'Going alone',
-    icon: 'person-outline',
-    badgeCount: '1 person',
+    image: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=800&fit=crop&q=80',
   },
   {
     value: 'couple',
     label: 'Couple',
     subtitle: 'Two of us',
-    icon: 'heart-outline',
-    badgeCount: '2 people',
+    image: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800&fit=crop&q=80',
   },
   {
     value: 'friends',
     label: 'Friends',
     subtitle: 'Group getaway',
-    icon: 'people-outline',
-    badgeCount: '3+ people',
+    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&fit=crop&q=80',
   },
   {
     value: 'family',
     label: 'Family',
     subtitle: 'With children',
-    icon: 'home-outline',
-    badgeCount: 'All ages',
+    image: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&fit=crop&q=80',
   },
 ]
 
-function PartyCard({
+function CompanionCard({
   item,
   selected,
   onSelect,
+  index,
+  isReduceMotion,
+  cardAspectRatio,
 }: {
   item: TravelPartyOption
   selected: boolean
   onSelect: () => void
+  index: number
+  isReduceMotion: boolean
+  cardAspectRatio: number
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current
+  const [scaleAnim] = useState(() => new Animated.Value(1))
+  const [selectAnim] = useState(() => new Animated.Value(selected ? 1 : 0))
+
+  // Coordinated entrance animation
+  const [entranceFade] = useState(() => new Animated.Value(isReduceMotion ? 1 : 0))
+  const [entranceTranslate] = useState(() => new Animated.Value(isReduceMotion ? 0 : 12))
+
+  useEffect(() => {
+    if (!isReduceMotion) {
+      Animated.parallel([
+        Animated.timing(entranceFade, {
+          toValue: 1,
+          duration: 280,
+          delay: index * 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(entranceTranslate, {
+          toValue: 0,
+          duration: 320,
+          delay: index * 40,
+          useNativeDriver: true,
+        }),
+      ]).start()
+    }
+  }, [isReduceMotion, index])
+
+  useEffect(() => {
+    Animated.timing(selectAnim, {
+      toValue: selected ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start()
+  }, [selected])
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.96,
+      toValue: 0.98,
       useNativeDriver: true,
-      speed: 20,
+      speed: 35,
+      bounciness: 0,
     }).start()
   }
 
@@ -70,65 +114,116 @@ function PartyCard({
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
-      friction: 4,
+      speed: 30,
+      bounciness: 0,
     }).start()
+  }
+
+  const handlePress = () => {
+    Haptics.selectionAsync().catch(() => {})
+    onSelect()
   }
 
   return (
     <Animated.View
       style={{
-        transform: [{ scale: scaleAnim }],
+        opacity: entranceFade,
+        transform: [{ translateY: entranceTranslate }, { scale: scaleAnim }],
         width: '48%',
-        aspectRatio: 0.95,
+        aspectRatio: cardAspectRatio,
       }}
     >
       <Pressable
-        onPress={onSelect}
+        onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: selected }}
         accessibilityLabel={`${item.label}, ${item.subtitle}`}
-        className={`w-full h-full p-4 rounded-[22px] justify-between border ${
-          selected
-            ? 'bg-surface border-[2px] border-primary shadow-sm'
-            : 'bg-surface border-border/80 active:bg-border/20'
-        }`}
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: 24,
+          overflow: 'hidden',
+          backgroundColor: '#E8EBDD',
+        }}
       >
-        <View className="flex-row items-center justify-between">
-          <View
-            className={`w-11 h-11 rounded-full items-center justify-center ${
-              selected ? 'bg-primary' : 'bg-canvas border border-border'
-            }`}
+        {/* Edge-to-edge Photography */}
+        <ExpoImage
+          source={item.image}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+          style={{ width: '100%', height: '100%' }}
+        />
+
+        {/* Balanced Bottom Gradient Overlay for Crystal-Clear Readability */}
+        <LinearGradient
+          colors={['transparent', 'rgba(12, 22, 16, 0.45)', 'rgba(8, 16, 12, 0.88)']}
+          locations={[0, 0.48, 1]}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '60%',
+            justifyContent: 'flex-end',
+            padding: 14,
+          }}
+          pointerEvents="none"
+        >
+          <Text
+            numberOfLines={1}
+            className="font-sans font-medium text-[22px] sm:text-[23px] text-white tracking-tight leading-tight"
           >
-            <Ionicons
-              name={item.icon}
-              size={22}
-              color={selected ? '#D7E58A' : '#263F35'}
-            />
-          </View>
-
-          {selected ? (
-            <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
-              <Ionicons name="checkmark" size={14} color="#D7E58A" />
-            </View>
-          ) : (
-            <View className="px-2 py-0.5 rounded-full bg-canvas border border-border/60">
-              <Text className="font-sans text-[10px] text-muted font-medium">
-                {item.badgeCount}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View className="mt-2">
-          <Text className="font-sans font-semibold text-[17px] text-text">
             {item.label}
           </Text>
-          <Text className="font-sans text-[13px] text-muted mt-0.5">
+          <Text
+            numberOfLines={1}
+            className="font-sans font-normal text-[15px] sm:text-[16px] text-white/85 mt-1 leading-snug"
+          >
             {item.subtitle}
           </Text>
-        </View>
+        </LinearGradient>
+
+        {/* Selection Outline Overlay (Smooth Fade without Layout Jumps) */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            borderRadius: 24,
+            borderWidth: 2.5,
+            borderColor: '#263F35',
+            opacity: selectAnim,
+          }}
+          pointerEvents="none"
+        />
+
+        {/* Compact Check Indicator (Upper Corner, Only on Selected Card) */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            opacity: selectAnim,
+            transform: [
+              {
+                scale: selectAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1],
+                }),
+              },
+            ],
+          }}
+          pointerEvents="none"
+        >
+          <View className="w-7 h-7 rounded-full bg-primary items-center justify-center border border-white/20 shadow-xs">
+            <Ionicons name="checkmark" size={15} color="#D7E58A" />
+          </View>
+        </Animated.View>
       </Pressable>
     </Animated.View>
   )
@@ -136,42 +231,57 @@ function PartyCard({
 
 export default function TravelPartyOnboardingScreen() {
   const router = useRouter()
+  const { height: screenHeight } = useWindowDimensions()
   const { data, setTravelParty } = useOnboardingStore()
+  const [isReduceMotion, setIsReduceMotion] = useState(false)
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setIsReduceMotion)
+      .catch(() => {})
+  }, [])
+
+  // Adapt card proportions gracefully based on screen height
+  const cardAspectRatio = screenHeight < 720 ? 0.84 : 0.76
 
   const handleSelect = (party: TravelParty) => {
     setTravelParty(party)
   }
 
   const handleContinue = () => {
-    if (data.travelParty) {
-      router.push('/onboarding/location')
+    if (!data.travelParty) {
+      setTravelParty('couple')
     }
-  }
-
-  const handleSkip = () => {
     router.push('/onboarding/location')
   }
 
   return (
     <OnboardingLayout
-      title="Who's going with you?"
-      subtitle="Solo journeys, family escapes, and group trips need different things."
+      title="Who's coming along?"
       currentStep={4}
       totalSteps={4}
+      scrollable={false}
       primaryButtonText="Continue"
-      primaryButtonDisabled={!data.travelParty}
       onPrimaryPress={handleContinue}
-      secondaryButtonText="Skip for now"
-      onSecondaryPress={handleSkip}
+      onBack={() => {
+        if (router.canGoBack()) {
+          router.back()
+        } else {
+          router.replace('/onboarding/budget')
+        }
+      }}
     >
-      <View className="px-6 flex-1 justify-center py-4">
-        <View className="flex-row flex-wrap justify-between gap-y-4">
-          {PARTY_OPTIONS.map((item) => (
-            <PartyCard
+      <View className="px-6 flex-1 justify-center pb-2 pt-0.5">
+        <View className="flex-row flex-wrap justify-between gap-y-3.5">
+          {PARTY_OPTIONS.map((item, index) => (
+            <CompanionCard
               key={item.value}
               item={item}
               selected={data.travelParty === item.value}
               onSelect={() => handleSelect(item.value)}
+              index={index}
+              isReduceMotion={isReduceMotion}
+              cardAspectRatio={cardAspectRatio}
             />
           ))}
         </View>

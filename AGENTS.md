@@ -40,6 +40,9 @@ Do not add booking, collaboration, live prices, maps, or AI itinerary generation
 
 ## UX rules
 - Use the exact tone and primary copy in `DESIGN.md`. Keep language short, clear, useful, and calm.
+- Strictly use natural sentence case throughout the onboarding flow; uppercase styling is prohibited.
+- Maintain prominent, left-aligned onboarding page titles (~32–36pt) aligned with content grids.
+- Reserve dynamic morphing text (TextMorph) strictly for values that change interactively (duration days, budget amounts); never wrap static titles, multi-line sentences, or descriptions in TextMorph.
 - Do not claim booking or reservations are supported.
 - Onboarding questions are skippable. Keep Back navigation and preserve answers.
 - Ask location and notification permissions only after explaining the benefit and the user explicitly taps Enable. Both are optional. Never block core functionality after denial.

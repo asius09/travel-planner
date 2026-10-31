@@ -1,15 +1,10 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
-import {
-  View,
-  Text,
-  Pressable,
-  Animated,
-} from 'react-native'
+import React, { useRef, useState, useEffect } from 'react'
+import { View, Text, Animated } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
-import { OnboardingLayout } from '@/components/ui'
+import Svg, { Path } from 'react-native-svg'
+import { OnboardingLayout, WheelPicker, TextMorph, type WheelItem } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import type { Budget } from '@travel-planner/shared'
 
@@ -19,148 +14,202 @@ interface BudgetTier {
   symbol: string
   label: string
   range: string
-  description: string
   accentColor: string
 }
 
 const BUDGET_TIERS: BudgetTier[] = [
   {
     value: 'budget-friendly',
-    tierIndex: 1,
+    tierIndex: 0,
     symbol: '$',
     label: 'Budget-friendly',
-    range: 'Under $1,000',
-    description: 'Keep costs low and travel smart',
+    range: '< $1,000',
     accentColor: '#263F35',
   },
   {
     value: 'balanced',
-    tierIndex: 2,
+    tierIndex: 1,
     symbol: '$$',
     label: 'Balanced',
     range: '$1,000 – $3,000',
-    description: 'Great value with comfortable stays',
     accentColor: '#D8A66A',
   },
   {
     value: 'premium',
-    tierIndex: 3,
+    tierIndex: 2,
     symbol: '$$$',
     label: 'Premium',
     range: '$3,000+',
-    description: 'Boutique experiences and fine dining',
     accentColor: '#6B8E7D',
   },
   {
     value: 'not-sure',
-    tierIndex: 4,
+    tierIndex: 3,
     symbol: '~',
     label: 'Not sure yet',
     range: 'Flexible',
-    description: 'Open to recommendations across budgets',
-    accentColor: '#8E9489',
+    accentColor: '#A3B18A',
   },
 ]
 
-// Gauge segment angular configuration (180 deg upper arc)
-const GAUGE_SEGMENTS = [
-  { angleDeg: 156, rotDeg: -24, color: '#263F35' },
-  { angleDeg: 112, rotDeg: -68, color: '#D8A66A' },
-  { angleDeg: 68, rotDeg: -112, color: '#6B8E7D' },
-  { angleDeg: 24, rotDeg: -156, color: '#A3A89D' },
+const WHEEL_ITEMS: WheelItem<Budget>[] = BUDGET_TIERS.map((tier) => ({
+  value: tier.value,
+  label: tier.label,
+  symbol: tier.symbol,
+  accentColor: tier.accentColor,
+}))
+
+// Generous Semicircle Geometry with Plenty of Breathing Room
+const SVG_WIDTH = 330
+const SVG_HEIGHT = 175
+const ARC_CX = 165
+const ARC_CY = 158
+const ARC_RADIUS = 125
+const ARC_STROKE = 14
+
+// Arc sweep of each 37.5 degree section in points
+const ARC_SECTION_SWEEP_DEG = 37.5
+const ARC_SECTION_LENGTH = ARC_RADIUS * (ARC_SECTION_SWEEP_DEG * Math.PI / 180) // ~81.81
+
+interface ArcSection {
+  startDeg: number
+  endDeg: number
+  color: string
+}
+
+// 4 discrete curved sections along 180 deg upper semicircle with 10 deg gaps
+const ARC_SECTIONS: ArcSection[] = [
+  { startDeg: 180, endDeg: 142.5, color: '#263F35' }, // Budget-friendly
+  { startDeg: 132.5, endDeg: 95, color: '#D8A66A' },   // Balanced
+  { startDeg: 85, endDeg: 47.5, color: '#6B8E7D' },    // Premium
+  { startDeg: 37.5, endDeg: 0, color: '#A3B18A' },     // Flexible
 ]
 
-function SemicircularGauge({
-  selectedTierIndex,
+function getArcSegmentPath(
+  cx: number,
+  cy: number,
+  r: number,
+  startDeg: number,
+  endDeg: number
+) {
+  const rad1 = (startDeg * Math.PI) / 180
+  const rad2 = (endDeg * Math.PI) / 180
+  const x1 = cx + r * Math.cos(rad1)
+  const y1 = cy - r * Math.sin(rad1)
+  const x2 = cx + r * Math.cos(rad2)
+  const y2 = cy - r * Math.sin(rad2)
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`
+}
+
+// Precomputed SVG paths for the 4 sections
+const SECTION_PATHS = ARC_SECTIONS.map((s) =>
+  getArcSegmentPath(ARC_CX, ARC_CY, ARC_RADIUS, s.startDeg, s.endDeg)
+)
+
+/**
+ * Large Divided Semicircle Gauge:
+ * - 4 discrete curved sections with smooth fluid motion-path fill
+ * - Fits directly on the canvas background (no card container)
+ * - Radio-like knob removed
+ * - Bottom badge removed for pure, minimal editorial clarity
+ * - Range aliases (< $1k, $1k – $3k, $3k+, Flexible) cleanly centered in semibold
+ */
+function BrandSemicircleGauge({
   currentTier,
+  tierIndex,
 }: {
-  selectedTierIndex: number
   currentTier: BudgetTier
+  tierIndex: number
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current
-  const fadeAnim = useRef(new Animated.Value(1)).current
+  const targetProgress = (tierIndex + 1) * 0.25
+  const [animValue] = useState(() => new Animated.Value(targetProgress))
+  const [animatedProgress, setAnimatedProgress] = useState(targetProgress)
 
   useEffect(() => {
-    fadeAnim.setValue(0.4)
-    scaleAnim.setValue(0.96)
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 5,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [selectedTierIndex, fadeAnim, scaleAnim])
+    const id = animValue.addListener(({ value }) => {
+      setAnimatedProgress(value)
+    })
+    Animated.spring(animValue, {
+      toValue: targetProgress,
+      damping: 20,
+      stiffness: 140,
+      mass: 0.8,
+      useNativeDriver: false,
+    }).start()
 
-  // Center coordinate of arc
-  const cx = 130
-  const cy = 110
-  const radius = 78
+    return () => {
+      animValue.removeListener(id)
+    }
+  }, [targetProgress, animValue])
 
   return (
-    <View className="items-center justify-center py-4 bg-surface rounded-[24px] border border-border/80 p-6 mb-6">
-      {/* Semicircular Arc Display */}
-      <View style={{ width: 260, height: 140, position: 'relative' }}>
-        {GAUGE_SEGMENTS.map((seg, idx) => {
-          const isFilled =
-            selectedTierIndex === 4
-              ? true
-              : idx + 1 <= selectedTierIndex
-          const segmentColor = isFilled ? seg.color : '#E5E7DF'
-          const rad = (seg.angleDeg * Math.PI) / 180
-          const x = cx + radius * Math.cos(rad) - 24
-          const y = cy - radius * Math.sin(rad) - 7
-
-          return (
-            <View
-              key={idx}
-              style={{
-                position: 'absolute',
-                left: x,
-                top: y,
-                width: 48,
-                height: 14,
-                borderRadius: 7,
-                backgroundColor: segmentColor,
-                transform: [{ rotate: `${seg.rotDeg}deg` }],
-              }}
+    <View className="items-center justify-center pt-2 pb-1">
+      {/* Semicircle SVG Arc Display */}
+      <View style={{ width: SVG_WIDTH, height: SVG_HEIGHT, position: 'relative' }}>
+        <Svg width={SVG_WIDTH} height={SVG_HEIGHT} viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}>
+          {/* 1. Track Underlay for All 4 Sections */}
+          {SECTION_PATHS.map((path, idx) => (
+            <Path
+              key={`track-${idx}`}
+              d={path}
+              fill="none"
+              stroke="#E5E7DF"
+              strokeWidth={ARC_STROKE}
+              strokeLinecap="round"
+              opacity={0.7}
             />
-          )
-        })}
+          ))}
 
-        {/* Center Target Info */}
-        <Animated.View
+          {/* 2. Smooth Motion-Path Fill for Each Section */}
+          {ARC_SECTIONS.map((section, idx) => {
+            const sectionMin = idx * 0.25
+            const localProgress = Math.max(
+              0,
+              Math.min(1, (animatedProgress - sectionMin) / 0.25)
+            )
+            const dashOffset = ARC_SECTION_LENGTH * (1 - localProgress)
+
+            if (localProgress <= 0.001) return null
+
+            return (
+              <Path
+                key={`fill-${idx}`}
+                d={SECTION_PATHS[idx]}
+                fill="none"
+                stroke={section.color}
+                strokeWidth={ARC_STROKE}
+                strokeLinecap="round"
+                strokeDasharray={`${ARC_SECTION_LENGTH} ${ARC_SECTION_LENGTH}`}
+                strokeDashoffset={dashOffset}
+              />
+            )
+          })}
+        </Svg>
+
+        {/* Interior Center: Target Budget Range (Generous Breathing Room, Zero Overlap) */}
+        <View
           style={{
             position: 'absolute',
             left: 0,
             right: 0,
-            bottom: 6,
+            bottom: 22,
             alignItems: 'center',
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
+            justifyContent: 'center',
           }}
+          pointerEvents="none"
         >
-          <Text className="font-sans text-[11px] uppercase tracking-widest text-muted font-medium mb-1">
+          <Text className="font-sans text-[13px] text-muted font-medium mb-1">
             Target budget
           </Text>
-          <Text
-            className="font-sans font-bold text-[34px] tracking-tight text-text"
-            style={{ color: currentTier.accentColor }}
+
+          {/* Main Range Display with Smooth Morph */}
+          <TextMorph
+            className="font-sans font-medium text-[32px] text-text text-center tracking-tight leading-9"
+            duration={75}
           >
-            {currentTier.symbol}
-          </Text>
-          <Text className="font-sans font-medium text-[15px] text-text mt-0.5">
-            {currentTier.label}
-          </Text>
-          <Text className="font-sans text-xs text-muted mt-0.5">
             {currentTier.range}
-          </Text>
-        </Animated.View>
+          </TextMorph>
+        </View>
       </View>
     </View>
   )
@@ -170,11 +219,11 @@ export default function BudgetOnboardingScreen() {
   const router = useRouter()
   const { data, setBudget } = useOnboardingStore()
 
-  const currentTier =
+  const selectedTier =
     BUDGET_TIERS.find((t) => t.value === data.budget) ?? BUDGET_TIERS[1]
 
-  const handleSelectTier = (tier: BudgetTier) => {
-    setBudget(tier.value)
+  const handleWheelChange = (val: Budget) => {
+    setBudget(val)
   }
 
   const handleContinue = () => {
@@ -184,83 +233,40 @@ export default function BudgetOnboardingScreen() {
     router.push('/onboarding/travel-party')
   }
 
-  const handleSkip = () => {
-    router.push('/onboarding/travel-party')
-  }
-
   return (
     <OnboardingLayout
       title="What feels right for your budget?"
-      subtitle="We calculate trip totals using realistic destination estimates."
       currentStep={3}
       totalSteps={4}
+      scrollable={false}
       primaryButtonText="Continue"
       onPrimaryPress={handleContinue}
-      secondaryButtonText="Skip for now"
-      onSecondaryPress={handleSkip}
+      onBack={() => {
+        if (router.canGoBack()) {
+          router.back()
+        } else {
+          router.replace('/onboarding/duration')
+        }
+      }}
     >
-      <View className="px-6 pb-2">
-        {/* Semicircular Arc Visual Gauge */}
-        <SemicircularGauge
-          selectedTierIndex={currentTier.tierIndex}
-          currentTier={currentTier}
+      <View className="px-6 flex-1 justify-between pb-3 pt-1">
+        {/* Large Divided Semicircle Gauge with Smooth Motion-Path Fill */}
+        <BrandSemicircleGauge
+          currentTier={selectedTier}
+          tierIndex={selectedTier.tierIndex}
         />
 
-        {/* Budget Tiers List */}
-        <View className="gap-3">
-          {BUDGET_TIERS.map((tier) => {
-            const isSelected = data.budget === tier.value
-            return (
-              <Pressable
-                key={tier.value}
-                onPress={() => handleSelectTier(tier)}
-                accessibilityRole="button"
-                accessibilityLabel={`${tier.label}, ${tier.range}`}
-                accessibilityState={{ selected: isSelected }}
-                className={`p-4 rounded-[18px] border flex-row items-center justify-between ${
-                  isSelected
-                    ? 'bg-surface border-primary shadow-sm'
-                    : 'bg-surface border-border/80 active:bg-border/20'
-                }`}
-              >
-                <View className="flex-row items-center gap-3.5 flex-1">
-                  <View
-                    className={`w-11 h-11 rounded-[14px] items-center justify-center ${
-                      isSelected ? 'bg-primary' : 'bg-canvas border border-border'
-                    }`}
-                  >
-                    <Text
-                      className={`font-sans font-bold text-base ${
-                        isSelected ? 'text-accent' : 'text-text'
-                      }`}
-                    >
-                      {tier.symbol}
-                    </Text>
-                  </View>
-
-                  <View className="flex-1">
-                    <View className="flex-row items-center gap-2">
-                      <Text className="font-sans font-medium text-[16px] text-text">
-                        {tier.label}
-                      </Text>
-                      <Text className="font-sans text-xs text-muted font-normal">
-                        ({tier.range})
-                      </Text>
-                    </View>
-                    <Text className="font-sans text-[13px] text-muted mt-0.5" numberOfLines={1}>
-                      {tier.description}
-                    </Text>
-                  </View>
-                </View>
-
-                {isSelected && (
-                  <View className="w-6 h-6 rounded-full bg-primary items-center justify-center ml-2">
-                    <Ionicons name="checkmark" size={14} color="#D7E58A" />
-                  </View>
-                )}
-              </Pressable>
-            )
-          })}
+        {/* Full-Width 3D Cylindrical WheelPicker with Labels Only */}
+        <View className="w-full my-auto">
+          <WheelPicker<Budget>
+            items={WHEEL_ITEMS}
+            selectedValue={selectedTier.value}
+            onValueChange={handleWheelChange}
+            orientation="vertical"
+            variant="labels-only"
+            itemHeight={52}
+            fadeColor="#F8F6EF"
+          />
         </View>
       </View>
     </OnboardingLayout>

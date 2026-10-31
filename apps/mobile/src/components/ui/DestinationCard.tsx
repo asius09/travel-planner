@@ -1,10 +1,21 @@
 'use client'
 
 import React from 'react'
-import { View, Text, Pressable } from 'react-native'
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+  type GestureResponderEvent,
+} from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { formatCurrency } from '@travel-planner/shared'
+import { useTripStore } from '@/store/tripStore'
+import * as Haptics from 'expo-haptics'
 import type { Destination } from '@travel-planner/shared'
 
 interface DestinationCardProps {
@@ -12,66 +23,225 @@ interface DestinationCardProps {
   onPress?: () => void
   onAddToTrip?: () => void
   addedToTrip?: boolean
-  style?: any
+  style?: StyleProp<ViewStyle>
   className?: string
   currency?: 'USD' | 'INR'
+  layout?: 'standard' | 'compact'
 }
 
-export function DestinationCard({ 
-  destination, 
-  onPress, 
-  onAddToTrip, 
-  addedToTrip = false, 
+export function DestinationCard({
+  destination,
+  onPress,
+  onAddToTrip,
+  addedToTrip: addedProp,
   style,
   className = '',
   currency = 'USD',
+  layout = 'standard',
 }: DestinationCardProps) {
-  const costDisplay = formatCurrency(destination.estimatedCostMinor, destination.costCurrency as 'USD' | 'INR')
-  
-  return (
-    <Pressable 
-      onPress={onPress} 
-      style={style} 
-      className={`bg-surface rounded-[20px] border border-border overflow-hidden ${className}`}
-      accessibilityRole="button" 
-      accessibilityLabel={`${destination.name}, ${destination.country}`}
-    >
-      <View className="relative h-[180px] w-full">
-        <ExpoImage
-          source={destination.heroImage}
-          contentFit="cover"
-          transition={200}
-          placeholder="blur"
-          style={{ width: '100%', height: '100%' }}
-        />
-        {addedToTrip ? (
-          <View className="absolute top-3 right-3 flex-row items-center gap-1.5 py-1.5 px-3 bg-soft rounded-full border border-accent">
-            <Ionicons name="checkmark-circle" size={16} color="#263F35" />
-            <Text className="font-medium text-xs text-primary">Added to trip</Text>
-          </View>
-        ) : null}
-      </View>
+  const { isInTrip, addDestination, removeDestination } = useTripStore()
 
-      <View className="p-4 gap-2">
-        <View className="flex-row items-start justify-between gap-2">
-          <View className="flex-1 min-w-0">
-            <Text className="font-medium text-[17px] text-text mb-0.5" numberOfLines={1}>{destination.name}</Text>
-            <Text className="font-normal text-[13px] text-muted">{destination.region ? `${destination.region}, ${destination.country}` : destination.country}</Text>
-          </View>
-          <Text className="font-medium text-base text-text mt-0.5">{costDisplay}</Text>
+  const isSaved = addedProp !== undefined ? addedProp : isInTrip(destination.id)
+
+  const handleToggleSave = (e: GestureResponderEvent) => {
+    e?.stopPropagation?.()
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    } catch {
+      // Ignore
+    }
+
+    if (onAddToTrip) {
+      onAddToTrip()
+    } else {
+      if (isSaved) {
+        removeDestination(destination.id)
+      } else {
+        addDestination(destination.id, destination)
+      }
+    }
+  }
+
+  const costDisplay = formatCurrency(
+    destination.estimatedCostMinor,
+    (destination.costCurrency as 'USD' | 'INR') || currency
+  )
+
+  const location = destination.region
+    ? `${destination.region}, ${destination.country}`
+    : destination.country
+
+  const rating = (4.6 + ((destination.popularity || 85) % 4) * 0.1).toFixed(1)
+
+  if (layout === 'compact') {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={style}
+        accessibilityRole="button"
+        accessibilityLabel={`${destination.name}, ${destination.country}`}
+        className={`bg-surface rounded-[22px] border border-border p-3.5 flex-row items-center gap-3.5 active:opacity-90 ${className}`}
+      >
+        <View className="w-20 h-20 rounded-[16px] overflow-hidden relative bg-[#EAECE4]">
+          <ExpoImage
+            source={{ uri: destination.heroImage }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
         </View>
 
-        <Text className="font-normal text-sm text-text leading-5" numberOfLines={2}>{destination.shortDescription}</Text>
+        <View className="flex-1 min-w-0 justify-center">
+          <Text className="font-sans text-[12px] text-muted leading-tight" numberOfLines={1}>
+            {location}
+          </Text>
+          <Text className="font-sans font-medium text-[16px] text-text mt-0.5 leading-snug" numberOfLines={1}>
+            {destination.name}
+          </Text>
+          <View className="flex-row items-center gap-2 mt-1">
+            <Text className="font-sans font-semibold text-[14px] text-primary">
+              {costDisplay}
+            </Text>
+            <Text className="text-muted text-xs">•</Text>
+            <Text className="font-sans text-xs text-muted">
+              {destination.suggestedDaysMin}–{destination.suggestedDaysMax}d
+            </Text>
+          </View>
+        </View>
 
-        <View className="flex-row items-center gap-3 mt-1">
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="time-outline" size={16} color="#777F78" />
-            <Text className="font-normal text-xs text-muted">{destination.suggestedDaysMin}–{destination.suggestedDaysMax} days</Text>
+        <Pressable
+          onPress={handleToggleSave}
+          accessibilityRole="button"
+          accessibilityLabel={isSaved ? 'Remove from trip' : 'Save to trip'}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          className={`w-9 h-9 rounded-full items-center justify-center ${
+            isSaved ? 'bg-[#D4F638]' : 'bg-surface border border-border'
+          }`}
+        >
+          <Ionicons
+            name={isSaved ? 'bookmark' : 'bookmark-outline'}
+            size={16}
+            color={isSaved ? '#121614' : '#202822'}
+          />
+        </Pressable>
+      </Pressable>
+    )
+  }
+
+  // Standard full-bleed photographic card (matching premium travel reference design)
+  return (
+    <Pressable
+      onPress={onPress}
+      style={style}
+      className={`relative h-[250px] rounded-[28px] overflow-hidden bg-[#E7E9DF] border border-border/80 active:opacity-95 ${className}`}
+      accessibilityRole="button"
+      accessibilityLabel={`${destination.name}, ${location}`}
+    >
+      {/* Background Image */}
+      <ExpoImage
+        source={{ uri: destination.heroImage }}
+        contentFit="cover"
+        transition={250}
+        cachePolicy="memory-disk"
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Atmospheric Bottom Gradient Mask - Starts at 45% so top half of photograph is clear */}
+      <LinearGradient
+        colors={[
+          'transparent',
+          'rgba(0, 0, 0, 0.15)',
+          'rgba(0, 0, 0, 0.55)',
+          'rgba(0, 0, 0, 0.88)',
+        ]}
+        locations={[0.4, 0.6, 0.8, 1.0]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Top Floating Controls */}
+      <View className="absolute top-3.5 left-3.5 right-3.5 flex-row items-center justify-between z-10">
+        <View className="flex-row items-center gap-1.5">
+          <View className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-white/40">
+            <Text className="font-sans text-[11px] text-[#121614] font-semibold capitalize">
+              {destination.categoryTags[0] || 'Explore'}
+            </Text>
           </View>
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="star-outline" size={16} color="#777F78" />
-            <Text className="font-normal text-xs text-muted">{destination.highlights.slice(0, 2).join(', ')}</Text>
+          <View className="bg-black/35 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 flex-row items-center gap-1">
+            <Ionicons name="star" size={11} color="#FFD233" />
+            <Text className="font-sans text-[11px] text-white font-medium">
+              {rating}
+            </Text>
           </View>
+        </View>
+
+        <Pressable
+          onPress={handleToggleSave}
+          accessibilityRole="button"
+          accessibilityLabel={isSaved ? 'Remove from trip' : 'Save to trip'}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          className={`w-9 h-9 rounded-full items-center justify-center border border-white/30 ${
+            isSaved ? 'bg-[#D4F638]' : 'bg-white/90 backdrop-blur-md'
+          }`}
+        >
+          <Ionicons
+            name={isSaved ? 'bookmark' : 'bookmark-outline'}
+            size={16}
+            color="#121614"
+          />
+        </Pressable>
+      </View>
+
+      {/* Bottom Overlaid Information */}
+      <View className="flex-1 justify-end p-5">
+        <View className="flex-row items-center gap-1 mb-0.5">
+          <Ionicons name="location-outline" size={13} color="#D4F638" />
+          <Text className="font-sans text-[12.5px] text-white/90 leading-tight" numberOfLines={1}>
+            {location}
+          </Text>
+        </View>
+
+        <Text
+          className="font-sans font-bold text-[22px] text-white tracking-tight leading-tight"
+          numberOfLines={1}
+        >
+          {destination.name}
+        </Text>
+
+        {/* Bottom Actions & Cost Row */}
+        <View className="flex-row items-center justify-between mt-2.5 pt-2 border-t border-white/20">
+          <View className="flex-row items-baseline gap-1">
+            <Text className="font-sans font-bold text-[16.5px] text-[#D4F638] leading-tight">
+              {costDisplay}
+            </Text>
+            <Text className="font-sans text-[11px] text-white/70">
+              • {destination.suggestedDaysMin}–{destination.suggestedDaysMax}d
+            </Text>
+          </View>
+
+          {/* Quick Add Pill */}
+          <Pressable
+            onPress={handleToggleSave}
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? 'Saved in trip' : 'Add to trip'}
+            className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full ${
+              isSaved
+                ? 'bg-white/20 border border-white/30'
+                : 'bg-[#D4F638]'
+            }`}
+          >
+            <Ionicons
+              name={isSaved ? 'checkmark' : 'add'}
+              size={14}
+              color={isSaved ? '#FFFFFF' : '#121614'}
+            />
+            <Text
+              style={{ color: isSaved ? '#FFFFFF' : '#121614' }}
+              className="font-sans font-semibold text-[12px]"
+            >
+              {isSaved ? 'Saved' : 'Add to trip'}
+            </Text>
+          </Pressable>
         </View>
       </View>
     </Pressable>

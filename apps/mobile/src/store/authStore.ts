@@ -3,10 +3,18 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createAuthClient } from '@neondatabase/auth'
-import { api } from '@/services/api'
+import type {
+  TravelMood,
+  Duration,
+  Budget,
+  TravelParty,
+} from '@travel-planner/shared'
+import { travelMoodSchema, durationSchema, budgetSchema, travelPartySchema } from '@travel-planner/shared'
+import { api, registerAuthTokenProvider } from '@/services/api'
 
 const NEON_AUTH_BASE_URL: string =
-  (process.env['EXPO_PUBLIC_NEON_AUTH_BASE_URL'] as string) ?? 'https://api.example.com'
+  (process.env['EXPO_PUBLIC_NEON_AUTH_BASE_URL'] as string) ||
+  'https://ep-lucky-bird-a1q00z7m.neonauth.ap-southeast-1.aws.neon.tech/neondb/auth'
 
 export interface User {
   id: string
@@ -39,15 +47,42 @@ export interface AuthState {
 
 // Create Neon Auth client safely
 let neonAuth: ReturnType<typeof createAuthClient> | null = null
-try {
-  neonAuth = createAuthClient(NEON_AUTH_BASE_URL)
-} catch {
-  // Graceful fallback if neon auth client fails initialization
+if (NEON_AUTH_BASE_URL && !NEON_AUTH_BASE_URL.includes('example.com')) {
+  try {
+    neonAuth = createAuthClient(NEON_AUTH_BASE_URL)
+  } catch {
+    // Graceful fallback if neon auth client fails initialization
+    neonAuth = null
+  }
 }
 
 /** Safely serialize a Date (or string) to an ISO string. */
 function toISOString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value
+}
+
+/**
+ * The API stores preferences as plain strings; narrow them to the union types the
+ * stores expect. Values outside the known set fall back to the current store
+ * value rather than silently widening the type with a cast.
+ */
+function narrow<T extends string | undefined, S>(
+  schema: { safeParse: (v: T) => { success: true; data: S } | { success: false } },
+  value: T,
+  fallback: S,
+): S {
+  const result = schema.safeParse(value)
+  return result.success ? result.data : fallback
+}
+
+/** Extracts a message from an unknown thrown value without assuming its shape. */
+function errorMessage(value: unknown): string {
+  if (value instanceof Error) return value.message
+  if (typeof value === 'object' && value !== null && 'message' in value) {
+    const message = (value as { message?: unknown }).message
+    if (typeof message === 'string') return message
+  }
+  return String(value)
 }
 
 async function syncUserPreferences() {
@@ -57,12 +92,22 @@ async function syncUserPreferences() {
       const { useOnboardingStore } = await import('./onboardingStore')
       const { useThemeStore } = await import('./themeStore')
       const ob = useOnboardingStore.getState()
-      ob.setMood(prefs.travelMood as any)
-      ob.setDuration(prefs.duration as any)
-      ob.setBudget(prefs.budget as any)
-      ob.setTravelParty(prefs.travelParty as any)
+      const mood = narrow(travelMoodSchema, prefs.travelMood, ob.data.mood as TravelMood)
+      const duration = narrow(durationSchema, prefs.duration, ob.data.duration as Duration)
+      const budget = narrow(budgetSchema, prefs.budget, ob.data.budget as Budget)
+      const travelParty = narrow(
+        travelPartySchema,
+        prefs.travelParty,
+        ob.data.travelParty as TravelParty,
+      )
+
+      if (mood !== undefined) ob.setMood(mood)
+      if (duration !== undefined) ob.setDuration(duration)
+      if (budget !== undefined) ob.setBudget(budget)
+      if (travelParty !== undefined) ob.setTravelParty(travelParty)
+
       useOnboardingStore.setState((s) => ({ data: { ...s.data, completed: true } }))
-      useThemeStore.getState().setTheme(prefs.travelMood as any)
+      useThemeStore.getState().setTheme(mood)
     }
   } catch {
     // Ignore network errors
@@ -85,6 +130,14 @@ export const useAuthStore = create<AuthState>()(
       signUp: async (email: string, password: string, name?: string) => {
         set({ loading: true, error: null })
         const displayName = name?.trim() || email.split('@')[0]
+
+        // Reset onboarding state so newly registered user always starts onboarding fresh
+        try {
+          const { useOnboardingStore } = await import('./onboardingStore')
+          useOnboardingStore.getState().resetOnboarding()
+        } catch {
+          // Ignore
+        }
 
         // 1. Try API signup first (or Neon Auth if configured)
         try {
@@ -113,18 +166,17 @@ export const useAuthStore = create<AuthState>()(
                     },
                 loading: false,
               })
-              await syncUserPreferences()
               return true
             }
-          } catch (apiErr: any) {
+          } catch (apiErr: unknown) {
             // If email already exists, immediately throw that error
-            if (apiErr?.message?.includes('already registered') || apiErr?.message?.includes('already exists')) {
+            const apiMsg = errorMessage(apiErr)
+            if (apiMsg.includes('already registered') || apiMsg.includes('already exists')) {
               throw apiErr
             }
             // Otherwise, try Neon Auth client if available
             if (neonAuth) {
-              const neonClient = neonAuth as any
-              const neonResult = await neonClient.signUp.email({
+              const neonResult = await neonAuth.signUp.email({
                 email,
                 password,
                 name: displayName,
@@ -134,7 +186,7 @@ export const useAuthStore = create<AuthState>()(
                 throw new Error(neonResult.error.message)
               }
 
-              const sessionResult = await neonClient.getSession()
+              const sessionResult = await neonAuth.getSession()
               if (sessionResult?.data?.session && sessionResult?.data?.user) {
                 const s = sessionResult.data.session
                 const u = sessionResult.data.user
@@ -160,8 +212,16 @@ export const useAuthStore = create<AuthState>()(
           }
 
           throw new Error('Could not create account. Please try again.')
-        } catch (error: any) {
-          const message = error instanceof Error ? error.message : 'Sign up failed'
+        } catch (error: unknown) {
+          let message = error instanceof Error ? error.message : 'Sign up failed'
+          if (
+            message.includes('fetch failed') ||
+            message.includes('Network request failed') ||
+            message.includes('hostname could not be found') ||
+            message.includes('Failed to fetch')
+          ) {
+            message = 'Unable to connect to the server. Please verify your connection.'
+          }
           set({ loading: false, error: message })
           return false
         }
@@ -195,17 +255,16 @@ export const useAuthStore = create<AuthState>()(
                     },
                 loading: false,
               })
-              await syncUserPreferences()
               return true
             }
-          } catch (apiErr: any) {
-            if (apiErr?.message?.includes('Invalid email or password') || apiErr?.message?.includes('INVALID_CREDENTIALS')) {
+          } catch (apiErr: unknown) {
+            const apiMsg = errorMessage(apiErr)
+            if (apiMsg.includes('Invalid email or password') || apiMsg.includes('INVALID_CREDENTIALS')) {
               throw apiErr
             }
             // Try Neon Auth client if available
             if (neonAuth) {
-              const neonClient = neonAuth as any
-              const neonResult = await neonClient.signIn.email({
+              const neonResult = await neonAuth.signIn.email({
                 email,
                 password,
               })
@@ -214,7 +273,7 @@ export const useAuthStore = create<AuthState>()(
                 throw new Error(neonResult.error.message)
               }
 
-              const sessionResult = await neonClient.getSession()
+              const sessionResult = await neonAuth.getSession()
               if (sessionResult?.data?.session && sessionResult?.data?.user) {
                 const s = sessionResult.data.session
                 const u = sessionResult.data.user
@@ -241,8 +300,16 @@ export const useAuthStore = create<AuthState>()(
           }
 
           throw new Error('Sign in failed')
-        } catch (error: any) {
-          const message = error instanceof Error ? error.message : 'Sign in failed'
+        } catch (error: unknown) {
+          let message = error instanceof Error ? error.message : 'Sign in failed'
+          if (
+            message.includes('fetch failed') ||
+            message.includes('Network request failed') ||
+            message.includes('hostname could not be found') ||
+            message.includes('Failed to fetch')
+          ) {
+            message = 'Unable to connect to the server. Please verify your connection.'
+          }
           set({ loading: false, error: message })
           return false
         }
@@ -252,7 +319,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           await api.signOut()
           if (neonAuth) {
-            await (neonAuth as any).signOut().catch(() => {})
+            await neonAuth.signOut().catch(() => {})
           }
         } catch (error) {
           console.error('Signout error:', error)
@@ -269,9 +336,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       restoreSession: async () => {
+        // Immediately mark initialized so app launch is never blocked by network calls
+        set({ isInitialized: true })
+
         const { user, session } = get()
         if (!user || !session) {
-          set({ isInitialized: true })
           return
         }
 
@@ -294,16 +363,11 @@ export const useAuthStore = create<AuthState>()(
                     expiresAt: toISOString(remoteSession.session.expiresAt),
                   }
                 : session,
-              isInitialized: true,
             })
             await syncUserPreferences()
-          } else {
-            // Keep local cached session if network fails (offline support)
-            set({ isInitialized: true })
           }
         } catch {
           // Keep cached session on network failure
-          set({ isInitialized: true })
         }
       },
 
@@ -319,3 +383,6 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 )
+
+// Break require cycle between api.ts and authStore.ts
+registerAuthTokenProvider(() => useAuthStore.getState().session?.token)

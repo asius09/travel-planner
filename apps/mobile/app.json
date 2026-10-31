@@ -1,10 +1,15 @@
 {
   "expo": {
-    "name": "Travel Planner",
+    "name": "Outta",
     "slug": "travel-planner",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#263F35"
+    },
     "userInterfaceStyle": "light",
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -19,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F7F6F0"
+        "backgroundColor": "#F8F6EF"
       },
       "package": "com.travelplanner.app",
       "permissions": [
@@ -53,8 +58,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#F7F6F0"
+          "backgroundColor": "#263F35"
         }
       ]
     ],

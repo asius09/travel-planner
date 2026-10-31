@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import React from 'react'
 import {
   formatDurationLabel,
   daysToDurationCategory,
@@ -7,6 +8,8 @@ import {
   useOnboardingStore,
   getResumeStep,
 } from './store/onboardingStore'
+import { DayRulerPicker } from './components/ui/DayRulerPicker'
+import { RulerPicker } from './components/ui/RulerPicker'
 
 describe('Duration Helpers', () => {
   it('should correctly format day durations into human travel terms', () => {
@@ -23,7 +26,12 @@ describe('Duration Helpers', () => {
     expect(formatDurationLabel(15)).toBe('2 weeks 1 day')
     expect(formatDurationLabel(20)).toBe('2 weeks 6 days')
     expect(formatDurationLabel(21)).toBe('3 weeks')
-    expect(formatDurationLabel(25)).toBe('3+ weeks')
+    expect(formatDurationLabel(25)).toBe('3 weeks 4 days')
+    expect(formatDurationLabel(28)).toBe('4 weeks')
+    expect(formatDurationLabel(30)).toBe('1 month')
+    expect(formatDurationLabel(37)).toBe('1 month 1 week')
+    expect(formatDurationLabel(60)).toBe('2 months')
+    expect(formatDurationLabel(90)).toBe('3 months')
   })
 
   it('should map numeric days to duration schema categories', () => {
@@ -66,5 +74,37 @@ describe('Onboarding Flow & Navigation Sequence', () => {
     // Completing onboarding
     await useOnboardingStore.getState().completeOnboarding()
     expect(useOnboardingStore.getState().isComplete()).toBe(true)
+  })
+
+  it('DayRulerPicker instantiates with initial days and handles change callbacks', () => {
+    const onChange = vi.fn()
+    const element = React.createElement(DayRulerPicker, {
+      initialDays: 7,
+      isFlexible: false,
+      onChange,
+    })
+    expect(element).toBeDefined()
+    expect(element.props.initialDays).toBe(7)
+  })
+
+  it('RulerPicker generates correct ticks and props contract', () => {
+    const onValueChange = vi.fn()
+    const element = React.createElement(RulerPicker, {
+      min: 1,
+      max: 10,
+      step: 1,
+      value: 5,
+      onValueChange,
+      tickSpacing: 24,
+      indicatorColor: '#263F35',
+      fadeColor: '#FFFFFF',
+    })
+    expect(element).toBeDefined()
+    expect(element.props.value).toBe(5)
+    expect(element.props.min).toBe(1)
+    expect(element.props.max).toBe(10)
+    expect(element.props.step).toBe(1)
+    expect(element.props.tickSpacing).toBe(24)
+    expect(element.props.indicatorColor).toBe('#263F35')
   })
 })

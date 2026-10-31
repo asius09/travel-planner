@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { View, Animated, StyleProp, ViewStyle } from 'react-native'
 
 interface ProgressIndicatorProps {
@@ -17,7 +17,7 @@ function StepIndicatorItem({
   isActive: boolean
   isCompleted: boolean
 }) {
-  const widthAnim = useRef(new Animated.Value(isActive ? 28 : 8)).current
+  const [widthAnim] = useState(() => new Animated.Value(isActive ? 28 : 8))
 
   useEffect(() => {
     Animated.timing(widthAnim, {

@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { Button } from './Button'
 
 interface EmptyStateProps {
-  icon?: string
+  /** Icon name from the Ionicons set rendered by `@expo/vector-icons`. */
+  icon?: keyof typeof Ionicons.glyphMap
   title: string
   description: string
   actionLabel?: string
@@ -27,7 +28,7 @@ export function EmptyState({
   return (
     <View className={`flex-1 items-center justify-center p-8 gap-4 ${className}`} style={style}>
       <View className="w-20 h-20 rounded-full items-center justify-center bg-soft">
-        <Ionicons name={icon as any} size={36} color="#263F35" />
+        <Ionicons name={icon} size={36} color="#263F35" />
       </View>
       <Text className="font-medium text-xl text-center text-text">{title}</Text>
       <Text className="font-normal text-[15px] text-center text-muted leading-[22px] max-w-[280px]">

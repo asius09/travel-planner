@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { TextInput, View, Pressable } from 'react-native'
+import { TextInput, View, Pressable, type StyleProp, type ViewStyle, Platform } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 
 interface SearchBarProps {
@@ -11,25 +11,34 @@ interface SearchBarProps {
   onSubmit?: (text: string) => void
   onClear?: () => void
   autoFocus?: boolean
-  style?: any
+  style?: StyleProp<ViewStyle>
   className?: string
 }
 
-export function SearchBar({ 
-  placeholder = 'Search places, regions, or experiences', 
-  value, 
-  onChangeText, 
-  onSubmit, 
+export function SearchBar({
+  placeholder = 'Find places, food, Trips..',
+  value,
+  onChangeText,
+  onSubmit,
   onClear,
   autoFocus = false,
   style,
   className = '',
 }: SearchBarProps) {
   return (
-    <View className={`flex-row items-center bg-surface rounded-[14px] border border-border px-4 gap-3 ${className}`} style={style}>
-      <Ionicons name="search" size={22} color="#777F78" />
+    <View
+      className={`flex-row items-center bg-surface rounded-full border border-border px-4 h-[48px] ${className}`}
+      style={style}
+    >
+      <Ionicons name="search" size={19} color="#777F78" />
       <TextInput
-        className="flex-1 font-sans text-base text-text py-3.5"
+        className="flex-1 font-sans text-[15px] text-text ml-2.5"
+        style={{
+          paddingVertical: 0,
+          paddingHorizontal: 0,
+          height: Platform.OS === 'ios' ? 44 : '100%',
+          textAlignVertical: 'center',
+        }}
         placeholder={placeholder}
         placeholderTextColor="#777F78"
         value={value}
@@ -37,10 +46,17 @@ export function SearchBar({
         onSubmitEditing={onSubmit ? () => onSubmit(value) : undefined}
         autoFocus={autoFocus}
         clearButtonMode="never"
+        returnKeyType="search"
       />
       {value ? (
-        <Pressable onPress={onClear} accessibilityLabel="Clear search" className="p-1">
-          <Ionicons name="close-circle" size={22} color="#777F78" />
+        <Pressable
+          onPress={onClear}
+          accessibilityRole="button"
+          accessibilityLabel="Clear search text"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          className="p-1 active:opacity-60"
+        >
+          <Ionicons name="close-circle" size={18} color="#777F78" />
         </Pressable>
       ) : null}
     </View>

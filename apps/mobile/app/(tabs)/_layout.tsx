@@ -1,69 +1,36 @@
 'use client'
 
+import React from 'react'
 import { Tabs } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
-import { useThemeStore } from '@/store/themeStore'
+import { FloatingTabBar } from '@/components/navigation/FloatingTabBar'
 
 export default function TabsLayout() {
-  const { tokens } = useThemeStore()
-  
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: tokens.primary,
-        tabBarInactiveTintColor: '#777F78',
-        tabBarLabelStyle: {
-          fontFamily: 'Geist_Medium',
-          fontSize: 12,
-        },
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7DF',
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 90,
-        },
       }}
     >
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ focused, color }: any) => (
-            <Ionicons 
-              name={focused ? 'compass' : 'compass-outline'} 
-              size={24} 
-              color={color ?? undefined} 
-            />
-          ),
+          tabBarAccessibilityLabel: 'Explore destinations tab',
         }}
       />
       <Tabs.Screen
         name="trip"
         options={{
           title: 'My Trip',
-          tabBarIcon: ({ focused, color }: any) => (
-            <Ionicons 
-              name={focused ? 'bookmark' : 'bookmark-outline'} 
-              size={24} 
-              color={color ?? undefined} 
-            />
-          ),
+          tabBarAccessibilityLabel: 'My saved trip itinerary tab',
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ focused, color }: any) => (
-            <Ionicons 
-              name={focused ? 'settings' : 'settings-outline'} 
-              size={24} 
-              color={color ?? undefined} 
-            />
-          ),
+          tabBarAccessibilityLabel: 'Settings and preferences tab',
         }}
       />
     </Tabs>

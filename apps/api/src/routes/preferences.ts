@@ -1,4 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi'
+import type { Context } from 'hono'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { authSecurity, type AppEnv } from '../types'
 import { db } from '../db'
@@ -90,45 +91,62 @@ preferencesRoutes.openapi(
 )
 
 // Create or update preferences (supports both PUT and POST)
-const updatePreferencesHandler = async (c: any) => {
+
+/** Body accepted by the update routes (server-managed columns excluded). */
+const preferencesUpdateBodySchema = userPreferencesSchema.omit({
+  userId: true,
+  updatedAt: true,
+})
+
+type PreferencesUpdateBody = z.infer<typeof preferencesUpdateBodySchema>
+
+/**
+ * Persists the caller's preferences, creating or updating the row as needed.
+ * Kept separate from the HTTP layer so the PUT and POST routes share it.
+ */
+async function persistPreferences(userId: string, body: PreferencesUpdateBody) {
+  const existing = await db.query.userPreferences.findFirst({
+    where: eq(userPreferences.userId, userId),
+  })
+
+  if (existing) {
+    const [updated] = await db
+      .update(userPreferences)
+      .set({ ...body, updatedAt: new Date() })
+      .where(eq(userPreferences.userId, userId))
+      .returning()
+    return updated
+  }
+
+  const [created] = await db
+    .insert(userPreferences)
+    .values({ userId, ...body })
+    .returning()
+  return created
+}
+
+const updatePreferencesHandler = async (c: Context<AppEnv>) => {
   const user = c.get('user')
-  
+
   if (!user) {
     return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
   }
-  
-  const body = c.req.valid('json')
-  
+
+  // `openapi` validates against the route schema before this handler runs, so
+  // parsing here is a no-op at runtime but keeps the body statically typed.
+  const body = preferencesUpdateBodySchema.parse(await c.req.json())
+
   try {
-    const existing = await db.query.userPreferences.findFirst({
-      where: eq(userPreferences.userId, user.id),
-    })
-    
-    let prefs
-    if (existing) {
-      [prefs] = await db
-        .update(userPreferences)
-        .set({
-          ...body,
-          updatedAt: new Date(),
-        })
-        .where(eq(userPreferences.userId, user.id))
-        .returning()
-    } else {
-      [prefs] = await db
-        .insert(userPreferences)
-        .values({
-          userId: user.id,
-          ...body,
-        })
-        .returning()
-    }
-    
-    return c.json({
-      ...prefs,
-      regionCode: prefs.regionCode ?? null,
-      updatedAt: prefs.updatedAt.toISOString(),
-    }, 200)
+    const prefs = await persistPreferences(user.id, body)
+
+    return c.json(
+      {
+        ...prefs,
+        regionCode: prefs.regionCode ?? null,
+        updatedAt: prefs.updatedAt.toISOString(),
+      },
+      200,
+    )
   } catch (error) {
     console.error('Preferences update error:', error)
     return c.json({ error: 'Failed to update preferences', code: 'UPDATE_FAILED' }, 500)
@@ -145,7 +163,7 @@ preferencesRoutes.openapi(
       body: {
         content: {
           'application/json': {
-            schema: userPreferencesSchema.omit({ userId: true, updatedAt: true }),
+            schema: preferencesUpdateBodySchema,
           },
         },
       },
@@ -199,7 +217,7 @@ preferencesRoutes.openapi(
       body: {
         content: {
           'application/json': {
-            schema: userPreferencesSchema.omit({ userId: true, updatedAt: true }),
+            schema: preferencesUpdateBodySchema,
           },
         },
       },

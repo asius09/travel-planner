@@ -30,6 +30,7 @@ export interface Destination {
   suggestedDaysMax: number
   highlights: string[]
   heroImage: string
+  galleryImages?: string[]
   imageCredit?: string
   isPublished: boolean
   popularity: number

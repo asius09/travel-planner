@@ -15,7 +15,8 @@ function computeRouteRedirect(params: {
   const inAuthGroup = routeSegment === 'auth'
   const inWelcome = !routeSegment || routeSegment === 'index'
   const inOnboardingGroup = routeSegment === 'onboarding'
-  const inProtectedGroup = routeSegment === '(tabs)' || routeSegment === 'destination'
+  const inProtectedGroup =
+    routeSegment === '(tabs)' || routeSegment === 'destination' || routeSegment === 'profile'
 
   const isAuthenticated = !!user
 
@@ -235,6 +236,16 @@ describe('Authentication & Navigation Journeys', () => {
         isOnboardingComplete: false,
         onboardingData: useOnboardingStore.getState().data,
         routeSegment: 'destination',
+      })
+      expect(redirect).toBe('/')
+    })
+
+    it('should redirect unauthenticated access to profile back to Welcome', () => {
+      const redirect = computeRouteRedirect({
+        user: null,
+        isOnboardingComplete: false,
+        onboardingData: useOnboardingStore.getState().data,
+        routeSegment: 'profile',
       })
       expect(redirect).toBe('/')
     })

@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons'
 interface OnboardingOptionProps {
   label: string
   description?: string
-  icon?: string
+  /** Icon name from the Ionicons set rendered by `@expo/vector-icons`. */
+  icon?: keyof typeof Ionicons.glyphMap
   selected: boolean
   onPress: () => void
   disabled?: boolean
@@ -25,7 +26,7 @@ export function OnboardingOption({
 }: OnboardingOptionProps) {
   return (
     <Pressable
-      className={`flex-row items-center p-4 rounded-2xl border-2 gap-3.5 min-h-[64px] ${
+      className={`flex-row items-center p-4 rounded-2xl border-2 gap-3.5 min-h-[64px] overflow-hidden ${
         selected ? 'border-primary bg-soft' : 'border-border bg-surface'
       } ${className}`}
       onPress={onPress}
@@ -41,7 +42,7 @@ export function OnboardingOption({
           }`}
         >
           <Ionicons
-            name={icon as any}
+            name={icon}
             size={20}
             color={selected ? '#FFFFFF' : '#263F35'}
           />

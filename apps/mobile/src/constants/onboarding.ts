@@ -1,3 +1,8 @@
+import type { Ionicons } from '@expo/vector-icons'
+
+/** An icon name from the Ionicons glyph set. */
+export type IoniconName = keyof typeof Ionicons.glyphMap
+
 export const MOOD_OPTIONS = [
   { value: 'nature', label: 'Nature', description: 'Forests, mountains, lakes', icon: 'leaf-outline' },
   { value: 'city', label: 'City & culture', description: 'Architecture, streets, markets', icon: 'business-outline' },

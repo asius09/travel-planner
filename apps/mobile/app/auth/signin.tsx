@@ -1,12 +1,16 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
-import { View, Text, ScrollView, Pressable, type TextInput } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
+import { View, Text, ScrollView, Pressable, LayoutAnimation, Platform, UIManager, type TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
 import { useOnboardingStore, getResumeStep } from '@/store/onboardingStore'
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true)
+}
 
 export default function SignInScreen() {
   const router = useRouter()
@@ -20,6 +24,10 @@ export default function SignInScreen() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
   const passwordRef = useRef<React.ElementRef<typeof TextInput>>(null)
+
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+  }, [error, emailError, passwordError])
 
   const validate = (): boolean => {
     let valid = true
@@ -53,7 +61,7 @@ export default function SignInScreen() {
         router.replace('/(tabs)/explore')
       } else {
         const resumeStep = getResumeStep(useOnboardingStore.getState().data)
-        router.replace(resumeStep as any)
+        router.replace(resumeStep)
       }
     }
   }
@@ -128,7 +136,12 @@ export default function SignInScreen() {
           />
 
           {error ? (
-            <Text className="font-sans text-xs text-[#E57373] -mt-1">{error}</Text>
+            <View className="flex-row items-center bg-red-50 border border-red-200 rounded-xl px-3.5 py-3 gap-2.5">
+              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Text className="flex-1 font-sans text-[13.5px] leading-[19px] font-medium text-red-800">
+                {error}
+              </Text>
+            </View>
           ) : null}
 
           <View className="mt-2">

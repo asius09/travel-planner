@@ -23,6 +23,12 @@
       "@travel-planner/api/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "vitest.config.ts", "vitest.config.integration.ts"],
+  "include": [
+    "src/**/*",
+    "vitest.config.ts",
+    "vitest.config.integration.ts",
+    "drizzle.config.ts",
+    "scripts/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

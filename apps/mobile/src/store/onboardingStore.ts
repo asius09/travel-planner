@@ -30,7 +30,19 @@ interface OnboardingState {
   isComplete: () => boolean
 }
 
-export function getResumeStep(data: OnboardingData): string {
+/**
+ * Onboarding routes the guard redirects to, as literal paths. A literal union
+ * (rather than `string`) is checked by Expo Router's typed routes and still
+ * satisfies the store tests, which compare against these same strings.
+ */
+export type OnboardingResumeStep =
+  | '/onboarding/mood'
+  | '/onboarding/duration'
+  | '/onboarding/budget'
+  | '/onboarding/travel-party'
+  | '/onboarding/location'
+
+export function getResumeStep(data: OnboardingData): OnboardingResumeStep {
   if (!data.mood) return '/onboarding/mood'
   if (!data.duration) return '/onboarding/duration'
   if (!data.budget) return '/onboarding/budget'

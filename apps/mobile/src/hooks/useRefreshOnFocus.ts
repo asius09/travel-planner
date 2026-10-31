@@ -1,5 +1,5 @@
 import React from 'react'
-import { useFocusEffect } from '@react-navigation/native'
+import { useFocusEffect } from 'expo-router'
 
 /**
  * Refetches a query when the React Native screen regains focus.

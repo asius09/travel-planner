@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { View, Animated, StyleProp, ViewStyle } from 'react-native'
 
 export function SkeletonCard({ style, className = '' }: { style?: StyleProp<ViewStyle>; className?: string } = {}) {
-  const opacity = useRef(new Animated.Value(0.4)).current
+  const [opacity] = useState(() => new Animated.Value(0.4))
 
   useEffect(() => {
     const loop = Animated.loop(

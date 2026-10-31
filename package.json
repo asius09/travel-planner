@@ -25,9 +25,11 @@
     "db:migrate": "pnpm --filter api db:migrate"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^20.14.0",
     "husky": "^9.0.11",
     "prettier": "^3.3.0",
+    "sharp": "^0.35.5",
     "typescript": "^5.5.0"
   },
   "engines": {

@@ -1,18 +1,109 @@
 'use client'
 
-import React, { useState } from 'react'
-import { View, Text, Pressable } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
+import {
+  View,
+  Text,
+  Animated,
+  Easing,
+  AccessibilityInfo,
+  useWindowDimensions,
+} from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as Location from 'expo-location'
 import { OnboardingLayout } from '@/components/ui'
+import { useThemeStore } from '@/store/themeStore'
 
 export default function LocationPermissionScreen() {
   const router = useRouter()
+  const { tokens } = useThemeStore()
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions()
   const [loading, setLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
+  // Restrained entrance animation: the map surface fades in, the pin rises
+  // into place, then the discovery radius reveals. Runs once per mount.
+  const [surfaceOpacity] = useState(() => new Animated.Value(0))
+  const [pinOpacity] = useState(() => new Animated.Value(0))
+  const [pinTranslateY] = useState(() => new Animated.Value(12))
+  const [ringsOpacity] = useState(() => new Animated.Value(0))
+  const [ringsScale] = useState(() => new Animated.Value(0.94))
+  const hasAnimated = useRef(false)
+
+  useEffect(() => {
+    if (hasAnimated.current) return
+    hasAnimated.current = true
+
+    const finishImmediately = () => {
+      surfaceOpacity.setValue(1)
+      pinOpacity.setValue(1)
+      pinTranslateY.setValue(0)
+      ringsOpacity.setValue(1)
+      ringsScale.setValue(1)
+    }
+
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((reduceMotion) => {
+        if (reduceMotion) {
+          finishImmediately()
+          return
+        }
+
+        Animated.timing(surfaceOpacity, {
+          toValue: 1,
+          duration: 360,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start()
+
+        Animated.sequence([
+          Animated.delay(140),
+          Animated.parallel([
+            Animated.timing(pinOpacity, {
+              toValue: 1,
+              duration: 380,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pinTranslateY, {
+              toValue: 0,
+              duration: 380,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start()
+
+        Animated.sequence([
+          Animated.delay(240),
+          Animated.parallel([
+            Animated.timing(ringsOpacity, {
+              toValue: 1,
+              duration: 440,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(ringsScale, {
+              toValue: 1,
+              duration: 440,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start()
+      })
+      .catch(finishImmediately)
+  }, [surfaceOpacity, pinOpacity, pinTranslateY, ringsOpacity, ringsScale])
+
+  // Responsive map tile: scales with the window, clamped for small devices.
+  const tileSize = Math.min(windowWidth * 0.74, 300, (windowHeight * 0.32) / 0.78)
+  const tileHeight = tileSize * 0.78
+  const outerRingSize = tileHeight * 0.92
+  const innerDiscSize = tileHeight * 0.62
+
   const handleEnableLocation = async () => {
+    if (loading) return
     setLoading(true)
     try {
       const { status } = await Location.requestForegroundPermissionsAsync()
@@ -23,10 +114,10 @@ export default function LocationPermissionScreen() {
       // Graceful fallback for mock or unsupported environments
     } finally {
       setLoading(false)
-      // Smoothly advance to notifications
+      // Advance to notifications step smoothly
       setTimeout(() => {
         router.push('/onboarding/notifications')
-      }, 250)
+      }, 200)
     }
   }
 
@@ -37,84 +128,81 @@ export default function LocationPermissionScreen() {
   return (
     <OnboardingLayout
       title="Find places near you"
-      subtitle="Discover nearby destinations, regional getaways, and day trips from where you are."
+      currentStep={5}
+      totalSteps={6}
+      scrollable={false}
       primaryButtonText={statusMessage || 'Enable location'}
       primaryButtonLoading={loading}
       onPrimaryPress={handleEnableLocation}
       secondaryButtonText="Not now"
       onSecondaryPress={handleSkip}
+      onBack={() => {
+        if (router.canGoBack()) {
+          router.back()
+        } else {
+          router.replace('/onboarding/travel-party')
+        }
+      }}
     >
-      <View className="px-6 flex-1 justify-center py-2">
-        {/* Stylized Editorial Route Map Card (inspired by reference image) */}
-        <View className="bg-[#EBF2F0] rounded-[26px] border border-[#D5E2DE] p-6 overflow-hidden relative shadow-sm mb-6">
-          {/* Subtle Decorative Route Map Nodes and Curves */}
-          <View className="flex-row justify-between items-center mb-6">
-            <View className="flex-row items-center gap-2 px-3 py-1.5 bg-white/90 rounded-full border border-border/60">
-              <View className="w-2.5 h-2.5 rounded-full bg-primary" />
-              <Text className="font-sans text-xs font-semibold text-primary">
-                Explore nearby
-              </Text>
-            </View>
-            <View className="w-8 h-8 rounded-full bg-white/80 items-center justify-center">
-              <Ionicons name="compass-outline" size={18} color="#263F35" />
-            </View>
-          </View>
+      <View className="flex-1 px-6" pointerEvents="none">
+        <View className="flex-1 items-center justify-center">
+          {/* Map-inspired surface with a central pin and a restrained radius */}
+          <Animated.View
+            style={{ opacity: surfaceOpacity }}
+            className="items-center justify-center overflow-hidden rounded-card border border-border bg-soft"
+          >
+            <View style={{ width: tileSize, height: tileHeight }}>
+              {/* Discovery radius rings */}
+              <Animated.View
+                style={{
+                  opacity: ringsOpacity,
+                  transform: [{ scale: ringsScale }],
+                }}
+                className="absolute inset-0 items-center justify-center"
+              >
+                <View
+                  style={{
+                    width: outerRingSize,
+                    height: outerRingSize,
+                    borderRadius: outerRingSize / 2,
+                    borderWidth: 1,
+                    borderColor: `${tokens.primary}1A`,
+                  }}
+                  className="items-center justify-center"
+                >
+                  <View
+                    style={{
+                      width: innerDiscSize,
+                      height: innerDiscSize,
+                      borderRadius: innerDiscSize / 2,
+                    }}
+                    className="bg-surface/60"
+                  />
+                </View>
+              </Animated.View>
 
-          {/* Map Graphic Container */}
-          <View className="h-44 relative justify-center items-center">
-            {/* Soft decorative waypoint loops */}
-            <View
-              className="absolute w-48 h-32 rounded-[60px] border-[2px] border-primary/20"
-              style={{ transform: [{ rotate: '-12deg' }] }}
-            />
-            <View
-              className="absolute w-40 h-24 rounded-[40px] border-[2px] border-dashed border-primary/30"
-              style={{ transform: [{ rotate: '8deg' }] }}
-            />
-
-            {/* Waypoint 1: Coastal Escape */}
-            <View
-              className="absolute top-2 left-4 bg-white/95 px-3 py-1.5 rounded-full shadow-sm border border-border/80 flex-row items-center gap-1.5"
-            >
-              <Ionicons name="water-outline" size={12} color="#176C70" />
-              <Text className="font-sans text-[11px] font-semibold text-text">
-                Coastal route
-              </Text>
+              {/* Central location pin */}
+              <Animated.View
+                style={{
+                  opacity: pinOpacity,
+                  transform: [{ translateY: pinTranslateY }],
+                }}
+                className="h-[72px] w-[72px] items-center justify-center rounded-full border border-border bg-surface shadow-xs"
+              >
+                <Ionicons name="location" size={34} color={tokens.primary} />
+              </Animated.View>
             </View>
+          </Animated.View>
 
-            {/* Central Location Beacon */}
-            <View className="items-center z-10">
-              <View className="w-14 h-14 rounded-full bg-white shadow-md items-center justify-center border-2 border-primary">
-                <Ionicons name="location" size={26} color="#263F35" />
-              </View>
-              <View className="mt-2 bg-primary px-3 py-1 rounded-full shadow-sm">
-                <Text className="font-sans text-[11px] font-semibold text-white">
-                  Your location
-                </Text>
-              </View>
-            </View>
-
-            {/* Waypoint 2: Mountain Trail */}
-            <View
-              className="absolute bottom-2 right-4 bg-white/95 px-3 py-1.5 rounded-full shadow-sm border border-border/80 flex-row items-center gap-1.5"
-            >
-              <Ionicons name="trail-sign-outline" size={12} color="#963F32" />
-              <Text className="font-sans text-[11px] font-semibold text-text">
-                Weekend trail
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Privacy Note */}
-        <View className="flex-row items-center gap-2.5 px-3 py-2 bg-surface rounded-xl border border-border/60">
-          <Ionicons name="shield-checkmark-outline" size={18} color="#263F35" />
-          <Text className="font-sans text-xs text-muted flex-1 leading-5">
-            Your location is used on-device only for sorting recommendations. It is never sold or shared.
+          {/* Supporting copy */}
+          <Text className="mt-8 max-w-[320px] text-center font-sans text-[15px] leading-6 text-muted">
+            Your location helps us find relevant places nearby. You stay in control.
+          </Text>
+          <Text className="mt-2.5 max-w-[300px] text-center font-sans text-[13px] text-muted">
+            Processed on-device only. Never tracked or sold.
           </Text>
         </View>
       </View>
     </OnboardingLayout>
   )
 }
-

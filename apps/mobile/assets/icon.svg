@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Outta App Icon</title>
+  <desc>Deep forest green circular route symbol on warm ivory background.</desc>
+  <rect width="1024" height="1024" fill="#F8F6EF"/>
+  <g transform="translate(512, 512) scale(1.70) translate(-520.5, -419.76)" fill="#173D30">
+    <!-- Open circular arc: a horizon or gateway -->
+    <path d="M374 457 A154 154 0 1 1 667 457 L604 457 A91 91 0 1 0 427 503 Z"/>
+    <!-- Sweeping route / landscape form -->
+    <path d="M395 584 L505 492 C551 455 608 444 667 451 L667 472 C667 534 617 584 555 584 Z"/>
+  </g>
+</svg>
