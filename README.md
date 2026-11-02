@@ -10,7 +10,12 @@ Outta is designed to help travelers turn an aspirational travel mood into a shor
 
 All screens represent real, verified states from the application running on device and simulator. Files are sorted chronologically in [`apps/mobile/assets/screens`](./apps/mobile/assets/screens/).
 
-> 📹 **Full Demo Walkthrough**: A complete 2m 21s end-to-end screen recording is available at [`apps/mobile/assets/screens/19_demo_walkthrough.mov`](./apps/mobile/assets/screens/19_demo_walkthrough.mov).
+> 🎥 **Full Demo Walkthrough**  
+> A complete end-to-end screen recording of the Outta app — authentication, onboarding, Explore, destination details, trip planning, settings, and preferences — all in one continuous take.
+>
+> [![Demo Walkthrough Video](https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg)](./apps/mobile/assets/screens/19_demo_walkthrough.mov)
+>
+> **Download:** [19_demo_walkthrough.mov](./apps/mobile/assets/screens/19_demo_walkthrough.mov) (MOV format, ~2m 21s)
 
 ### 1. Authentication & Onboarding
 
