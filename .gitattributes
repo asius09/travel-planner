@@ -1,1 +1,2 @@
 apps/mobile/assets/screens/19_demo_walkthrough.mov filter=lfs diff=lfs merge=lfs -text
+apps/mobile/assets/screens/19_demo_walkthrough.mp4 filter=lfs diff=lfs merge=lfs -text
