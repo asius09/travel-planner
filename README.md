@@ -13,10 +13,10 @@ All screens represent real, verified states from the application running on devi
 > 🎥 **Full Demo Walkthrough**  
 > A complete end-to-end screen recording of the Outta app — authentication, onboarding, Explore, destination details, trip planning, settings, and preferences — all in one continuous take.
 
-<video controls src="https://raw.githubusercontent.com/asius09/travel-planner/main/apps/mobile/assets/screens/19_demo_walkthrough.mov" width="320">
+<video controls src="https://raw.githubusercontent.com/asius09/travel-planner/main/apps/mobile/assets/screens/19_demo_walkthrough.mp4" width="320">
   Your browser does not support the video tag.
   <br/><br/>
-  <a href="./apps/mobile/assets/screens/19_demo_walkthrough.mov">Download video (MOV, ~134 MB)</a>
+  <a href="./apps/mobile/assets/screens/19_demo_walkthrough.mp4">Download video (MP4, ~19 MB)</a>
 </video>
 
 ### 1. Authentication & Onboarding
