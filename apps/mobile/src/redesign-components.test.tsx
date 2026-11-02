@@ -11,7 +11,6 @@ import { DestinationCard } from './components/ui/DestinationCard'
 import { PreferenceSummary } from './components/ui/PreferenceSummary'
 import { useTripStore } from './store/tripStore'
 import { useAuthStore } from './store/authStore'
-import { useThemeStore } from './store/themeStore'
 import { radii, typography, spacing, avatarGradients } from './theme/tokens'
 
 const mockDestination = {
@@ -70,7 +69,6 @@ describe('Design Tokens', () => {
 describe('Redesign UI Components', () => {
   beforeEach(() => {
     useTripStore.getState().clearTrip()
-    useThemeStore.getState().setTheme('nature')
     useAuthStore.getState().setUser(
       {
         id: 'u-1',

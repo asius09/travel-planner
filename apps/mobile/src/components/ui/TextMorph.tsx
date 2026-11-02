@@ -27,10 +27,6 @@ import Animated, {
   type LayoutAnimation,
 } from 'react-native-reanimated'
 
-// =============================================================================
-// Interfaces & Types (from expo-morphing-text)
-// =============================================================================
-
 export type TMorphingTextVariant = 'text' | 'number' | 'slots'
 export type TMotionPreset = 'default' | 'smooth' | 'snappy' | 'bouncy'
 export type TRise = 1 | -1 | 0
@@ -172,11 +168,6 @@ export interface IMorphingTextProps extends Omit<TextProps, 'children'> {
 }
 
 export type TextMorphProps = IMorphingTextProps
-
-// =============================================================================
-// Constants & Presets
-// =============================================================================
-
 export const MOTION_PRESETS: Readonly<Record<TMotionPreset, TTransition>> = {
   default: {
     type: 'timing',
@@ -206,10 +197,6 @@ const IDLE_FRAME: IGlyphFrame = {
   translateY: 0,
   scale: 1,
 }
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 const getSegmenter = (): Intl.Segmenter | null => {
   if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
@@ -259,10 +246,6 @@ function padLeft<T>(items: readonly T[], length: number, fill: T): T[] {
     ...items,
   ]
 }
-
-// =============================================================================
-// Diffing Algorithms
-// =============================================================================
 
 export const findSharedGlyphs = (
   oldSegments: readonly string[],
@@ -378,11 +361,6 @@ export const assignDigitIds = (
 
   return { ids, direction, idSeed: id }
 }
-
-// =============================================================================
-// Reanimated Layout & Value Helpers
-// =============================================================================
-
 export const animateTo = (
   toValue: number,
   transition: TTransition,
@@ -478,10 +456,6 @@ export const createFade = (
   ]
 }
 
-// =============================================================================
-// Hooks
-// =============================================================================
-
 export const useGlyphIds = (
   text: string,
   graphemes: readonly string[]
@@ -576,10 +550,6 @@ export const useSettleCallback = (
     return () => clearTimeout(timeout)
   }, [text, totalDuration, initial])
 }
-
-// =============================================================================
-// Subcomponents
-// =============================================================================
 
 export const Glyph = React.memo<IGlyphProps>(
   ({ char, textStyle, className }: IGlyphProps): React.JSX.Element => (
@@ -813,9 +783,6 @@ export const DigitReel = React.memo<IDigitReelProps>(
     const [, fadeOut] = useMemo(() => createFade(transition), [transition])
     const [isMounted, setIsMounted] = useState<boolean>(false)
 
-    // Animate in only after the first frame has painted, so the reels start from
-    // their resting state instead of morphing in mid-mount. Deferring the update
-    // to a frame avoids a synchronous state change in the effect body.
     useEffect(() => {
       const frame = requestAnimationFrame(() => setIsMounted(true))
       return () => cancelAnimationFrame(frame)
@@ -864,10 +831,6 @@ export const DigitReel = React.memo<IDigitReelProps>(
   }
 )
 DigitReel.displayName = 'DigitReel'
-
-// =============================================================================
-// Core Component: MorphingText / TextMorph / Torph
-// =============================================================================
 
 export const MorphingText = React.memo<IMorphingTextProps>(
   ({
@@ -975,11 +938,6 @@ export const TextMorph = MorphingText
 export const Torph = MorphingText
 
 export default MorphingText
-
-// =============================================================================
-// Styles
-// =============================================================================
-
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',

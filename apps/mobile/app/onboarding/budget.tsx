@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import Svg, { Path } from 'react-native-svg'
 import { OnboardingLayout, WheelPicker, TextMorph, type WheelItem } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
+import { semanticColors } from '@/theme/colors'
 import type { Budget } from '@travel-planner/shared'
 
 interface BudgetTier {
@@ -24,7 +25,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '$',
     label: 'Budget-friendly',
     range: '< $1,000',
-    accentColor: 'var(--primary)',
+    accentColor: semanticColors.primary,
   },
   {
     value: 'balanced',
@@ -32,7 +33,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '$$',
     label: 'Balanced',
     range: '$1,000 – $3,000',
-    accentColor: 'var(--accent)',
+    accentColor: semanticColors.accent,
   },
   {
     value: 'premium',
@@ -40,7 +41,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '$$$',
     label: 'Premium',
     range: '$3,000+',
-    accentColor: 'var(--accent)',
+    accentColor: semanticColors.accent,
   },
   {
     value: 'not-sure',
@@ -48,7 +49,7 @@ const BUDGET_TIERS: BudgetTier[] = [
     symbol: '~',
     label: 'Not sure yet',
     range: 'Flexible',
-    accentColor: 'var(--muted-foreground)',
+    accentColor: semanticColors.mutedForeground,
   },
 ]
 
@@ -79,10 +80,10 @@ interface ArcSection {
 
 // 4 discrete curved sections along 180 deg upper semicircle with 10 deg gaps
 const ARC_SECTIONS: ArcSection[] = [
-  { startDeg: 180, endDeg: 142.5, color: 'var(--primary)' },     // Budget-friendly
-  { startDeg: 132.5, endDeg: 95, color: 'var(--accent)' },       // Balanced
-  { startDeg: 85, endDeg: 47.5, color: 'var(--accent)' },        // Premium
-  { startDeg: 37.5, endDeg: 0, color: 'var(--muted-foreground)' }, // Flexible
+  { startDeg: 180, endDeg: 142.5, color: semanticColors.primary },     // Budget-friendly
+  { startDeg: 132.5, endDeg: 95, color: semanticColors.accent },       // Balanced
+  { startDeg: 85, endDeg: 47.5, color: semanticColors.accent },        // Premium
+  { startDeg: 37.5, endDeg: 0, color: semanticColors.mutedForeground }, // Flexible
 ]
 
 function getArcSegmentPath(
@@ -153,7 +154,7 @@ function BrandSemicircleGauge({
               key={`track-${idx}`}
               d={path}
               fill="none"
-              stroke="var(--border)"
+              stroke={semanticColors.border}
               strokeWidth={ARC_STROKE}
               strokeLinecap="round"
               opacity={0.7}
@@ -265,7 +266,7 @@ export default function BudgetOnboardingScreen() {
             orientation="vertical"
             variant="labels-only"
             itemHeight={52}
-            fadeColor="var(--background)"
+            fadeColor={semanticColors.background}
           />
         </View>
       </View>

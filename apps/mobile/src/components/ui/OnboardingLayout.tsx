@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Button } from './Button'
 import { ProgressIndicator } from './ProgressIndicator'
+import { semanticColors } from '@/theme/colors'
 
 interface OnboardingLayoutProps {
   title: string
@@ -121,7 +122,7 @@ export function OnboardingLayout({
           hitSlop={12}
           className="w-10 h-10 items-center justify-center -ml-2 rounded-full active:bg-muted/40"
         >
-          <Ionicons name="arrow-back" size={24} color="var(--foreground)" />
+          <Ionicons name="arrow-back" size={24} color={semanticColors.foreground} />
         </Pressable>
 
         {currentStep && totalSteps ? (

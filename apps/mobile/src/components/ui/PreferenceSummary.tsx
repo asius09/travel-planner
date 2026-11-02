@@ -5,7 +5,6 @@ import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { TravelMood, Duration, Budget, TravelParty } from '@travel-planner/shared';
 import { useOnboardingStore } from '@/store/onboardingStore';
-import { useThemeStore } from '@/store/themeStore';
 import { api } from '@/services/api';
 import {
   MOOD_OPTIONS,
@@ -15,6 +14,7 @@ import {
   type IoniconName,
 } from '@/constants/onboarding';
 import * as Haptics from 'expo-haptics';
+import { semanticColors } from '@/theme/colors';
 
 type PreferenceKey = 'mood' | 'duration' | 'budget' | 'travelParty';
 
@@ -33,11 +33,10 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
     setBudget,
     setTravelParty,
   } = useOnboardingStore();
-  const { theme, setTheme, tokens } = useThemeStore();
 
   const [activeEditor, setActiveEditor] = useState<PreferenceKey | null>(null);
 
-  const currentMood = theme || preferences.mood || 'nature';
+  const currentMood = preferences.mood || 'nature';
   const currentDuration = preferences.duration || 'flexible';
   const currentBudget = preferences.budget || 'balanced';
   const currentParty = preferences.travelParty || 'solo';
@@ -62,7 +61,6 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
     if (key === 'mood') {
       const mood = value as TravelMood;
       setMood(mood);
-      setTheme(mood);
     } else if (key === 'duration') {
       setDuration(value as Duration);
     } else if (key === 'budget') {
@@ -74,7 +72,7 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
     setActiveEditor(null);
 
     try {
-      await api.savePreferences({
+      await api.saveOnboardingStep({
         travelMood: key === 'mood' ? (value as TravelMood) : currentMood,
         duration: key === 'duration' ? (value as Duration) : currentDuration,
         budget: key === 'budget' ? (value as Budget) : currentBudget,
@@ -100,48 +98,29 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
         }}
         accessibilityRole="button"
         accessibilityLabel={`Change ${title}: currently ${currentLabel}`}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: '#FFFFFF',
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: '#E7E3DB',
-          padding: 14,
-          marginBottom: 10,
-        }}
+        className="flex-row items-center justify-between bg-surface rounded-[16px] border border-border p-3.5 mb-2.5 active:opacity-70"
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              backgroundColor: '#E7E3DB',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name={icon} size={18} color="#454B4D" />
+        <View className="flex-row items-center gap-2.5">
+          <View className="w-9 h-9 rounded-[10px] bg-secondary items-center justify-center">
+            <Ionicons name={icon} size={18} color={semanticColors.mutedForeground} />
           </View>
           <View>
-            <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: '#252B2D' }}>
+            <Text className="font-sans text-[14px] font-medium text-foreground">
               {title}
             </Text>
-            <Text style={{ fontFamily: 'Geist', fontSize: 13, color: '#454B4D' }}>
+            <Text className="font-sans text-[13px] text-muted-foreground">
               {currentLabel}
             </Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={16} color="#454B4D" />
+        <Ionicons name="chevron-forward" size={16} color={semanticColors.mutedForeground} />
       </Pressable>
     );
   };
 
   return (
-    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16 }}>
-      <Text style={{ fontFamily: 'Geist', fontSize: 18, fontWeight: '500', color: '#252B2D', marginBottom: 14 }}>
+    <View className="bg-card rounded-[24px] border border-border p-4">
+      <Text className="font-sans text-[18px] font-medium text-card-foreground mb-3.5">
         Travel preferences
       </Text>
 
@@ -162,17 +141,17 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
             className="max-h-[80%] rounded-t-[32px] bg-surface p-6"
             onPress={(e) => e.stopPropagation()}
           >
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E7E3DB', alignSelf: 'center', marginBottom: 16 }} />
+            <View className="w-10 h-1 rounded-full bg-muted self-center mb-4" />
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <Text style={{ fontFamily: 'Geist', fontSize: 18, fontWeight: '500', color: '#252B2D' }}>
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="font-sans text-[18px] font-medium text-foreground">
                 {activeEditor === 'mood' && 'Select travel mood'}
                 {activeEditor === 'duration' && 'Select trip duration'}
                 {activeEditor === 'budget' && 'Select budget range'}
                 {activeEditor === 'travelParty' && 'Select travel party'}
               </Text>
               <Pressable onPress={() => setActiveEditor(null)} accessibilityLabel="Close">
-                <Ionicons name="close-circle" size={24} color="#454B4D" />
+                <Ionicons name="close-circle" size={24} color={semanticColors.mutedForeground} />
               </Pressable>
             </View>
 
@@ -188,10 +167,10 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        backgroundColor: isSelected ? tokens.primary : '#FFFFFF',
+                        backgroundColor: isSelected ? semanticColors.primary : semanticColors.surface,
                         borderRadius: 14,
                         borderWidth: 1,
-                        borderColor: isSelected ? tokens.primary : '#E7E3DB',
+                        borderColor: isSelected ? semanticColors.primary : semanticColors.border,
                         padding: 14,
                         marginBottom: 8,
                       }}
@@ -202,22 +181,22 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
                             width: 32,
                             height: 32,
                             borderRadius: 10,
-                            backgroundColor: isSelected ? tokens.primaryForeground : '#FFFFFF',
+                            backgroundColor: isSelected ? semanticColors.primaryForeground : semanticColors.surface,
                             borderWidth: 1,
-                            borderColor: isSelected ? tokens.primaryForeground : '#E7E3DB',
+                            borderColor: isSelected ? semanticColors.primaryForeground : semanticColors.border,
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
                         >
-                          <Ionicons name={opt.icon} size={16} color={isSelected ? tokens.primary : '#454B4D'} />
+                          <Ionicons name={opt.icon} size={16} color={isSelected ? semanticColors.primary : semanticColors.mutedForeground} />
                         </View>
                         <View>
-                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? tokens.primaryForeground : '#252B2D' }}>
+                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? semanticColors.primaryForeground : semanticColors.foreground }}>
                             {opt.label}
                           </Text>
                         </View>
                       </View>
-                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={tokens.primaryForeground} />}
+                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={semanticColors.primaryForeground} />}
                     </Pressable>
                   );
                 })}
@@ -233,22 +212,22 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        backgroundColor: isSelected ? tokens.primary : '#FFFFFF',
+                        backgroundColor: isSelected ? semanticColors.primary : semanticColors.surface,
                         borderRadius: 14,
                         borderWidth: 1,
-                        borderColor: isSelected ? tokens.primary : '#E7E3DB',
+                        borderColor: isSelected ? semanticColors.primary : semanticColors.border,
                         padding: 14,
                         marginBottom: 8,
                       }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? tokens.primaryForeground : '#252B2D' }}>
+                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? semanticColors.primaryForeground : semanticColors.foreground }}>
                             {opt.label}
                           </Text>
                         </View>
                       </View>
-                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={tokens.primaryForeground} />}
+                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={semanticColors.primaryForeground} />}
                     </Pressable>
                   );
                 })}
@@ -264,22 +243,22 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        backgroundColor: isSelected ? tokens.primary : '#FFFFFF',
+                        backgroundColor: isSelected ? semanticColors.primary : semanticColors.surface,
                         borderRadius: 14,
                         borderWidth: 1,
-                        borderColor: isSelected ? tokens.primary : '#E7E3DB',
+                        borderColor: isSelected ? semanticColors.primary : semanticColors.border,
                         padding: 14,
                         marginBottom: 8,
                       }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? tokens.primaryForeground : '#252B2D' }}>
+                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? semanticColors.primaryForeground : semanticColors.foreground }}>
                             {opt.label}
                           </Text>
                         </View>
                       </View>
-                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={tokens.primaryForeground} />}
+                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={semanticColors.primaryForeground} />}
                     </Pressable>
                   );
                 })}
@@ -295,22 +274,22 @@ export function PreferenceSummary({ className = '' }: { className?: string }) {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        backgroundColor: isSelected ? tokens.primary : '#FFFFFF',
+                        backgroundColor: isSelected ? semanticColors.primary : semanticColors.surface,
                         borderRadius: 14,
                         borderWidth: 1,
-                        borderColor: isSelected ? tokens.primary : '#E7E3DB',
+                        borderColor: isSelected ? semanticColors.primary : semanticColors.border,
                         padding: 14,
                         marginBottom: 8,
                       }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? tokens.primaryForeground : '#252B2D' }}>
+                          <Text style={{ fontFamily: 'Geist', fontSize: 14, fontWeight: '500', color: isSelected ? semanticColors.primaryForeground : semanticColors.foreground }}>
                             {opt.label}
                           </Text>
                         </View>
                       </View>
-                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={tokens.primaryForeground} />}
+                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={semanticColors.primaryForeground} />}
                     </Pressable>
                   );
                 })}

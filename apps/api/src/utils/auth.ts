@@ -1,16 +1,10 @@
-import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { randomUUID } from 'node:crypto'
-import { bearer } from 'better-auth/plugins'
-import { db } from '../db'
-import * as schema from '../db/schema'
-import { env } from '../utils/env'
-
-// Better Auth is configured against the Drizzle schema directly. Our tables use
-// plural names (users, sessions, accounts, verifications) and snake_case
-// columns, so the adapter needs both the schema and `usePlural` to resolve
-// models correctly. Without them Better Auth reports "Missing tables
-// user, session, account, verification" at startup.
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { randomUUID } from 'node:crypto';
+import { bearer } from 'better-auth/plugins';
+import { db } from '../db';
+import * as schema from '../db/schema';
+import { env } from '../utils/env';
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -20,25 +14,23 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // Disabled per product decision
+    requireEmailVerification: false,
     minPasswordLength: 8,
     maxPasswordLength: 128,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 30, // 30 days
-    updateAge: 60 * 60 * 24, // 1 day
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
-      maxAge: 60 * 5, // 5 minutes
+      maxAge: 60 * 5,
     },
   },
-  // Lets API clients authenticate with `Authorization: Bearer <session token>`.
   plugins: [bearer()],
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: env.CORS_ORIGINS,
   advanced: {
-    // Our tables use uuid primary keys; Better Auth defaults to non-UUID ids.
     database: {
       generateId: () => randomUUID(),
     },
@@ -46,6 +38,6 @@ export const auth = betterAuth({
       enabled: false,
     },
   },
-})
+});
 
-export type Session = typeof auth.$Infer.Session
+export type Session = typeof auth.$Infer.Session;

@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
+import { semanticColors } from '@/theme/colors'
 
 export interface WheelItem<T = unknown> {
   value: T
@@ -57,7 +58,7 @@ export function WheelPicker<T = unknown>({
   onValueChange,
   itemWidth = 92,
   itemHeight,
-  fadeColor = '#F8F6EF',
+  fadeColor = semanticColors.background,
   disabled = false,
   className = '',
   style,
@@ -107,17 +108,16 @@ export function WheelPicker<T = unknown>({
       lastSelectedIndex.current = selectedIndex
       const targetOffset = selectedIndex * stepSize
       currentOffset.current = targetOffset
-      // Set initial scroll without lag
       setTimeout(() => {
         scrollToOffset(targetOffset, false)
         scrollPos.setValue(targetOffset)
-      }, 10)
+      }, 20)
       return
     }
 
     if (containerDim > 0 && !isDragging.current && !isMomentum.current) {
       const targetOffset = selectedIndex * stepSize
-      if (Math.abs(currentOffset.current - targetOffset) > stepSize / 2) {
+      if (Math.abs(currentOffset.current - targetOffset) > 1) {
         currentOffset.current = targetOffset
         lastSelectedIndex.current = selectedIndex
         scrollToOffset(targetOffset, true)
@@ -155,8 +155,8 @@ export function WheelPicker<T = unknown>({
     const vel = isVertical
       ? Math.abs(event.nativeEvent.velocity?.y ?? 0)
       : Math.abs(event.nativeEvent.velocity?.x ?? 0)
-    if (vel < 0.1) {
-      isDragging.current = false
+    isDragging.current = false
+    if (vel < 0.08) {
       const offset = isVertical
         ? event.nativeEvent.contentOffset.y
         : event.nativeEvent.contentOffset.x
@@ -164,15 +164,6 @@ export function WheelPicker<T = unknown>({
       const targetOffset = nearestIndex * stepSize
       currentOffset.current = targetOffset
       scrollToOffset(targetOffset, true)
-
-      if (nearestIndex !== lastSelectedIndex.current) {
-        lastSelectedIndex.current = nearestIndex
-        const activeItem = items[nearestIndex]
-        if (activeItem) {
-          onValueChange(activeItem.value, nearestIndex)
-          Haptics.selectionAsync().catch(() => {})
-        }
-      }
     }
   }
 
@@ -183,10 +174,15 @@ export function WheelPicker<T = unknown>({
     const offset = isVertical
       ? event.nativeEvent.contentOffset.y
       : event.nativeEvent.contentOffset.x
+    const maxOffset = (items.length - 1) * stepSize
     const nearestIndex = Math.max(0, Math.min(items.length - 1, Math.round(offset / stepSize)))
     const targetOffset = nearestIndex * stepSize
     currentOffset.current = targetOffset
-    scrollToOffset(targetOffset, true)
+
+    // If offset ended slightly off target or at bounce boundary, cleanly align it
+    if (Math.abs(offset - targetOffset) > 1 || offset < 0 || offset > maxOffset) {
+      scrollToOffset(targetOffset, true)
+    }
 
     if (nearestIndex !== lastSelectedIndex.current) {
       lastSelectedIndex.current = nearestIndex
@@ -289,9 +285,12 @@ export function WheelPicker<T = unknown>({
         horizontal={!isVertical}
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
-        decelerationRate={0.985}
+        decelerationRate="fast"
         snapToInterval={stepSize}
-        snapToAlignment="center"
+        snapToOffsets={items.map((_, i) => i * stepSize)}
+        snapToAlignment="start"
+        bounces={false}
+        overScrollMode="never"
         onScroll={onAnimatedScroll}
         scrollEventThrottle={16}
         scrollEnabled={!disabled}
@@ -301,6 +300,7 @@ export function WheelPicker<T = unknown>({
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollBegin={() => {
           isDragging.current = true
+          isMomentum.current = true
         }}
         onMomentumScrollEnd={handleMomentumScrollEnd}
         contentContainerStyle={
@@ -407,7 +407,7 @@ export function WheelPicker<T = unknown>({
                       fontFamily: 'Geist_Medium',
                       fontWeight: '500',
                       fontSize: 20,
-                      color: '#202822',
+                      color: semanticColors.foreground,
                       textAlign: 'center',
                       letterSpacing: -0.2,
                     }}
@@ -445,9 +445,9 @@ export function WheelPicker<T = unknown>({
                   borderRadius: 20,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: isSelected ? '#263F35' : '#FFFFFF',
+                  backgroundColor: isSelected ? semanticColors.primary : semanticColors.surface,
                   borderWidth: isSelected ? 2 : 1.5,
-                  borderColor: isSelected ? '#263F35' : '#E0DED4',
+                  borderColor: isSelected ? semanticColors.primary : semanticColors.border,
                   paddingVertical: 6,
                 }}
               >
@@ -458,7 +458,7 @@ export function WheelPicker<T = unknown>({
                       fontFamily: 'Geist',
                       fontWeight: '600',
                       fontSize: 22,
-                      color: isSelected ? '#D7E58A' : '#263F35',
+                      color: isSelected ? semanticColors.accent : semanticColors.primary,
                       lineHeight: 26,
                     }}
                   >
@@ -473,7 +473,7 @@ export function WheelPicker<T = unknown>({
                     fontFamily: 'Geist',
                     fontWeight: isSelected ? '600' : '500',
                     fontSize: 12,
-                    color: isSelected ? '#FFFFFF' : '#777F78',
+                    color: isSelected ? semanticColors.primaryForeground : semanticColors.mutedForeground,
                     marginTop: 2,
                   }}
                 >

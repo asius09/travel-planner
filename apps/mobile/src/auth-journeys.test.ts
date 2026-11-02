@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useAuthStore } from '@/store/authStore'
 import { useOnboardingStore, getResumeStep } from '@/store/onboardingStore'
 import { useTripStore } from '@/store/tripStore'
-import { useThemeStore } from '@/store/themeStore'
 
 // Pure navigation guard simulation function matching app/_layout.tsx exactly
 function computeRouteRedirect(params: {
@@ -208,7 +207,6 @@ describe('Authentication & Navigation Journeys', () => {
       expect(useTripStore.getState().getTotalBudget()).toBe(130000)
 
       // Change preferences in settings
-      useThemeStore.getState().setTheme('beach')
       useOnboardingStore.getState().setMood('beach')
 
       // Verify trip data remains untouched

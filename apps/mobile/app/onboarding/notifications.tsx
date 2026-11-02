@@ -14,8 +14,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
 import { LinearGradient } from 'expo-linear-gradient'
 import { OnboardingLayout } from '@/components/ui'
-import { useOnboardingStore } from '@/store/onboardingStore'
-import { useThemeStore } from '@/store/themeStore'
+import { semanticColors } from '@/theme/colors'
 
 interface PreviewNotification {
   title: string
@@ -74,11 +73,10 @@ function NotificationPreviewCard({
 
 export default function NotificationsPermissionScreen() {
   const router = useRouter()
-  const { completeOnboarding } = useOnboardingStore()
-  const { tokens } = useThemeStore()
   const { width: windowWidth, height: windowHeight } = useWindowDimensions()
   const [loading, setLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Restrained entrance animation: the phone fades in, then the notification
   // card rises slightly into place. Runs once per mount, never on rerenders.
@@ -138,12 +136,10 @@ export default function NotificationsPermissionScreen() {
   const phoneWidth = Math.min(windowWidth * 0.55, 216, (windowHeight * 0.42) / PHONE_RATIO)
   const phoneHeight = phoneWidth * PHONE_RATIO
   const cardWidth = Math.min(phoneWidth + 72, windowWidth - 48)
-  const cardTop = Math.round(phoneHeight * 0.2)
-  const fadeHeight = Math.round(phoneHeight * 0.5)
 
-  const handleFinish = async () => {
-    await completeOnboarding()
-    router.replace('/(tabs)/explore')
+  const handleFinish = () => {
+    setError(null)
+    router.replace('/onboarding/personalizing')
   }
 
   const handleEnableNotifications = async () => {
@@ -157,14 +153,14 @@ export default function NotificationsPermissionScreen() {
       // Graceful fallback for mock or unsupported environments
     } finally {
       setLoading(false)
-      setTimeout(async () => {
-        await handleFinish()
+      setTimeout(() => {
+        handleFinish()
       }, 250)
     }
   }
 
-  const handleSkip = async () => {
-    await handleFinish()
+  const handleSkip = () => {
+    handleFinish()
   }
 
   return (
@@ -187,31 +183,34 @@ export default function NotificationsPermissionScreen() {
       }}
     >
       <View className="flex-1 px-6 pb-2" pointerEvents="none">
-        {/* Phone mockup (open at the bottom) with a single preview notification */}
+        {/* Phone mockup (open at bottom, dissolving into background) */}
         <View className="flex-1 items-center justify-center">
           <View style={{ width: cardWidth, height: phoneHeight }} className="relative items-center">
+            {/* Elegant Device Frame */}
             <Animated.View style={{ opacity: phoneOpacity }}>
               <View
                 style={{
                   width: phoneWidth,
                   height: phoneHeight,
-                  borderTopLeftRadius: phoneWidth * 0.2,
-                  borderTopRightRadius: phoneWidth * 0.2,
+                  borderTopLeftRadius: Math.round(phoneWidth * 0.18),
+                  borderTopRightRadius: Math.round(phoneWidth * 0.18),
                 }}
-                className="items-center overflow-hidden border-t-[6px] border-r-[6px] border-l-[6px] border-muted/30 bg-border/70"
+                className="items-center overflow-hidden border-t-2 border-r-2 border-l-2 border-border/80 bg-surface-muted"
               >
-                {/* Notch pill */}
+                {/* Dynamic Island / Speaker notch */}
                 <View
-                  style={{ width: phoneWidth * 0.29, height: phoneWidth * 0.09, marginTop: 12 }}
-                  className="rounded-full bg-muted/40"
-                />
+                  style={{ width: phoneWidth * 0.28, height: 14, marginTop: 12 }}
+                  className="rounded-full bg-border items-center justify-center"
+                >
+                  <View className="w-2 h-2 rounded-full bg-surface-muted self-end mr-1.5" />
+                </View>
               </View>
             </Animated.View>
 
-            {/* Preview notification emerging from the phone screen */}
+            {/* Preview notification emerging over the phone screen */}
             <Animated.View
               style={{
-                top: cardTop,
+                top: Math.round(phoneHeight * 0.18),
                 zIndex: 30,
                 opacity: cardOpacity,
                 transform: [{ translateY: cardTranslateY }],
@@ -220,21 +219,26 @@ export default function NotificationsPermissionScreen() {
             >
               <NotificationPreviewCard
                 item={NOTIFICATION_PREVIEW}
-                softColor={tokens.soft}
-                primaryColor={tokens.primary}
+                softColor={semanticColors.surfaceMuted}
+                primaryColor={semanticColors.primary}
               />
             </Animated.View>
 
-            {/* Gradient fade so the open phone bottom dissolves into the canvas */}
+            {/* Gradient fade so the open phone bottom dissolves seamlessly into the background */}
             <LinearGradient
-              colors={['var(--background)00', 'var(--background)66', 'var(--background)F2', 'var(--background)']}
-              locations={[0, 0.5, 0.85, 1]}
+              colors={[
+                'rgba(250, 249, 246, 0)',
+                'rgba(250, 249, 246, 0.45)',
+                'rgba(250, 249, 246, 0.88)',
+                '#FAF9F6',
+              ]}
+              locations={[0, 0.38, 0.75, 1]}
               style={{
                 position: 'absolute',
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: fadeHeight,
+                height: Math.round(phoneHeight * 0.52),
                 zIndex: 20,
               }}
               pointerEvents="none"
@@ -242,11 +246,17 @@ export default function NotificationsPermissionScreen() {
           </View>
         </View>
 
-        {/* Reassurance note */}
-        <View className="items-center pb-1">
-          <Text className="px-4 text-center font-sans text-xs text-muted-foreground">
-            You can customize or silence notifications anytime in your account settings.
-          </Text>
+        {/* Reassurance note / save error */}
+        <View className="items-center">
+          {error ? (
+            <Text role="alert" className="px-4 text-center font-sans text-xs text-destructive">
+              {error}
+            </Text>
+          ) : (
+            <Text className="text-center font-sans text-xs text-muted-foreground">
+              You can customize or silence notifications anytime in your account settings.
+            </Text>
+          )}
         </View>
       </View>
     </OnboardingLayout>

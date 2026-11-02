@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { OnboardingLayout } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
-import { useThemeStore } from '@/store/themeStore'
+import { semanticColors } from '@/theme/colors'
 import type { TravelMood } from '@travel-planner/shared'
 
 interface MoodCardData {
@@ -146,7 +146,7 @@ function MoodCard({
           height: '100%',
           borderRadius: 24,
           overflow: 'hidden',
-          backgroundColor: 'var(--secondary)',
+          backgroundColor: semanticColors.secondary,
         }}
       >
         {/* Edge-to-edge High Quality Photography */}
@@ -197,7 +197,7 @@ function MoodCard({
             right: 0,
             borderRadius: 24,
             borderWidth: 2.5,
-            borderColor: 'var(--primary)',
+            borderColor: semanticColors.primary,
             opacity: selectAnim,
           }}
           pointerEvents="none"
@@ -222,7 +222,7 @@ function MoodCard({
           pointerEvents="none"
         >
           <View className="w-7 h-7 rounded-full bg-primary items-center justify-center border border-white/20 shadow-xs">
-            <Ionicons name="checkmark" size={15} color="var(--primary-foreground)" />
+            <Ionicons name="checkmark" size={15} color={semanticColors.primaryForeground} />
           </View>
         </Animated.View>
       </Pressable>
@@ -234,7 +234,6 @@ export default function MoodOnboardingScreen() {
   const router = useRouter()
   const { height: screenHeight } = useWindowDimensions()
   const { data, setMood } = useOnboardingStore()
-  const { setTheme } = useThemeStore()
   const [isReduceMotion, setIsReduceMotion] = useState(false)
 
   useEffect(() => {
@@ -248,7 +247,6 @@ export default function MoodOnboardingScreen() {
 
   const handleSelectMood = (mood: TravelMood) => {
     setMood(mood)
-    setTheme(mood)
   }
 
   const handleContinue = () => {

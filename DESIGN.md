@@ -62,18 +62,18 @@ Base palette colors that describe colors only. These are NOT tied to particular 
 
 | Primitive Token | Value | Description |
 |---|---|---|
-| `--color-ivory-50` | `#F6F4EF` | Warm ivory base background |
+| `--color-ivory-50` | `#FAF8F5` | Luminous warm porcelain/linen base background |
 | `--color-white-0` | `#FFFFFF` | Pure white |
-| `--color-ink-900` | `#252B2D` | Deep ink for text and primary actions |
-| `--color-ink-700` | `#454B4D` | Medium ink for muted text |
-| `--color-ocean-700` | `#456779` | Deep ocean blue for focus rings and active states |
-| `--color-ocean-500` | `#64869A` | Muted ocean blue for accent highlights |
-| `--color-mist-100` | `#DCE5E7` | Light mist for secondary surfaces |
-| `--color-stone-200` | `#E7E3DB` | Stone for muted backgrounds and borders |
-| `--color-muted-500` | `#777D7D` | Muted gray for secondary text |
-| `--color-success-700` | `#286749` | Success green |
-| `--color-warning-800` | `#795000` | Warning amber |
-| `--color-danger-700` | `#B42318` | Destructive red |
+| `--color-ink-900` | `#1A1F21` | Deep obsidian ink for text and primary actions |
+| `--color-ink-700` | `#50575B` | Clean graphite for muted text |
+| `--color-ocean-700` | `#21627E` | Deep Mediterranean marine for focus rings and active states |
+| `--color-ocean-500` | `#3586A9` | Riviera azure blue for accent highlights |
+| `--color-mist-100` | `#EEF4F6` | Fresh seafoam mist for secondary surfaces |
+| `--color-stone-200` | `#EBE7DF` | Warm platinum sand for borders and muted backgrounds |
+| `--color-muted-500` | `#757D81` | Balanced muted slate |
+| `--color-success-700` | `#1C6946` | Deep forest green |
+| `--color-warning-800` | `#8A5800` | Warm amber |
+| `--color-danger-700` | `#B8241B` | Crimson red |
 
 ### Layer 2: Semantic Color Tokens
 Semantic tokens reference primitive tokens. Components MUST use these semantic tokens via NativeWind utilities (e.g., `bg-background`, `text-foreground`, `bg-primary`, `border-border`).
@@ -111,16 +111,23 @@ Semantic tokens reference primitive tokens. Components MUST use these semantic t
 | `--navigation-active` | `var(--color-ocean-700)` | Navigation active indicator |
 | `--skeleton` | `var(--color-stone-200)` | Loading skeleton color |
 | `--focus-ring` | `var(--color-ocean-700)` | Focus indicator color |
-| `--overlay` | `#252B2D80` | General overlay (50% ink) |
-| `--image-overlay` | `#252B2D99` | Image overlay (60% ink) |
+| `--overlay` | `#1A1F2180` | General overlay (50% ink) |
+| `--image-overlay` | `#1A1F2199` | Image overlay (60% ink) |
+
+### Explicit Exceptions for Content-Specific Colors
+The strict prohibition on hardcoded colors applies to application UI Chrome, surfaces, typography, borders, controls, and indicators. The following are explicit exceptions:
+1. **Destination Photography:** Real-world landscape, architectural, and culture photography must retain natural daylight colors. Never tint or color-grade photos to match the app's theme.
+2. **Star Rating Icon:** The rating star glyph uses standard gold (`#FFD233`) for immediate user recognition.
+3. **Map Tiles & Geographic Markers:** Map rendering and geographic data visualizations.
+4. **Editorial Content Illustrations:** Genuinely multicolored content artwork.
 
 ### Mood Theme Palettes
 Travel mood personalizes the app's accent tokens and Explore hero imagery without altering information architecture or core contrast. Mood-specific overrides are defined in `src/store/themeStore.ts` and applied via the theme store:
 
-- **Nature (Default):** Deep forest primary (`#263F35`), vivid lime/sage accent (`#D7E58A`), soft moss wash (`#E8EBDD`).
-- **City & Culture:** Terracotta/brick primary (`#963F32`), warm ochre accent (`#D8A66A`), soft sand wash (`#F1E6D5`).
-- **Beach:** Deep maritime teal primary (`#176C70`), sunny sand accent (`#E3C77A`), soft seafoam wash (`#DCEEF0`).
-- **Adventure:** Slate granite primary (`#344B5B`), warm canyon accent (`#CB7049`), soft stone wash (`#E8DCC8`).
+- **Nature (Default):** Imperial pine primary (`#1B3B2E`), alpine mint accent (`#459A72`), fresh botanical mist wash (`#EAF3ED`).
+- **City & Culture:** Venetian terracotta primary (`#84291E`), warm amber sienna accent (`#D48240`), travertine wash (`#F8EFE7`).
+- **Beach:** Mediterranean marine primary (`#125761`), turquoise coastal lagoon accent (`#349AA8`), clean seafoam wash (`#E5F4F5`).
+- **Adventure:** Nordic slate primary (`#233747`), canyon sandstone accent (`#C95D34`), alpine granite wash (`#EFEAE0`).
 
 Mood tokens override `--primary`, `--primary-foreground`, `--accent`, `--accent-foreground`, and `--secondary` when a mood is active.
 
@@ -325,7 +332,7 @@ All semantic token combinations must meet WCAG 2.2 AA contrast thresholds:
 - UI boundaries and graphical indicators: ≥ 3:1
 - Focus indicators: ≥ 3:1 against adjacent colors
 
-Contrast is validated via automated checks against the resolved CSS variable values in `global.css`.
+Contrast is validated via automated checks against the resolved CSS variable values in `global.css` using the WCAG 2.2 relative luminance formula (`src/theme/contrast.test.ts`).
 
 ---
 

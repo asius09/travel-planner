@@ -2,34 +2,30 @@
  * Primitive color values for use in inline styles and component props
  * where Tailwind utility classes cannot be used (e.g., LinearGradient colors,
  * Ionicons color props, StyleSheet.create values, etc.).
- * 
+ *
  * These match the tokens defined in global.css and tailwind.config.ts.
  * Keep in sync with global.css primitive tokens.
  */
 
 export const primitiveColors = {
   // Base
-  ivory50: '#F6F4EF',
+  ivory50: '#FAF9F6',
   white: '#FFFFFF',
 
-  // Ink Scale
-  ink900: '#252B2D',
-  ink700: '#454B4D',
+  ink900: '#1A1D1E',
+  ink700: '#555E62',
 
-  // Ocean Scale
-  ocean700: '#456779',
-  ocean500: '#64869A',
+  ocean700: '#026AA7',
+  ocean500: '#0284C7',
 
-  // Muted / Surface
-  mist100: '#DCE5E7',
-  stone200: '#E7E3DB',
-  muted500: '#777D7D',
+  mist100: '#EBF5FB',
+  stone200: '#E4E7E9',
+  muted500: '#6C757D',
 
-  // Status
-  success700: '#286749',
-  warning800: '#795000',
-  danger700: '#B42318',
-} as const
+  success700: '#19633F',
+  warning800: '#875200',
+  danger700: '#B32118',
+} as const;
 
 /**
  * Semantic color aliases referencing primitives.
@@ -43,14 +39,14 @@ export const semanticColors = {
   surfaceElevated: primitiveColors.white,
   surfaceMuted: primitiveColors.mist100,
 
-  primary: primitiveColors.ink900,
+  primary: primitiveColors.ocean700,
   primaryForeground: primitiveColors.white,
 
   secondary: primitiveColors.mist100,
   secondaryForeground: primitiveColors.ink900,
 
   accent: primitiveColors.ocean500,
-  accentForeground: primitiveColors.ink900,
+  accentForeground: primitiveColors.white,
 
   muted: primitiveColors.stone200,
   mutedForeground: primitiveColors.ink700,
@@ -79,48 +75,30 @@ export const semanticColors = {
   skeleton: primitiveColors.stone200,
   focusRing: primitiveColors.ocean700,
 
-  overlay: '#252B2D80',
-  imageOverlay: '#252B2D99',
+  overlay: '#1A1D1E80',
+  imageOverlay: '#1A1D1E99',
 
-  // Direct primitive access for convenience
   white: primitiveColors.white,
   ink900: primitiveColors.ink900,
   ink700: primitiveColors.ink700,
-} as const
+} as const;
 
 /**
- * Mood-specific semantic color overrides.
- * Used by the theme store to provide mood-specific values.
+ * Mood color definitions. All moods resolve to the cohesive brand palette.
  */
-export const moodColors = {
-  nature: {
-    primary: '#263F35',
-    primaryForeground: '#FFFFFF',
-    accent: '#D7E58A',
-    accentForeground: '#252B2D',
-    soft: '#E8EBDD',
-  },
-  city: {
-    primary: '#963F32',
-    primaryForeground: '#FFFFFF',
-    accent: '#D8A66A',
-    accentForeground: '#252B2D',
-    soft: '#F1E6D5',
-  },
-  beach: {
-    primary: '#176C70',
-    primaryForeground: '#FFFFFF',
-    accent: '#E3C77A',
-    accentForeground: '#252B2D',
-    soft: '#DCEEF0',
-  },
-  adventure: {
-    primary: '#344B5B',
-    primaryForeground: '#FFFFFF',
-    accent: '#CB7049',
-    accentForeground: '#252B2D',
-    soft: '#E8DCC8',
-  },
-} as const
+const BRAND_MOOD = {
+  primary: primitiveColors.ocean700,
+  primaryForeground: primitiveColors.white,
+  accent: primitiveColors.ocean500,
+  accentForeground: primitiveColors.white,
+  soft: primitiveColors.mist100,
+} as const;
 
-export type MoodName = keyof typeof moodColors
+export const moodColors = {
+  nature: BRAND_MOOD,
+  city: BRAND_MOOD,
+  beach: BRAND_MOOD,
+  adventure: BRAND_MOOD,
+} as const;
+
+export type MoodName = keyof typeof moodColors;

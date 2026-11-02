@@ -47,6 +47,54 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   ...mockAsyncStorage,
 }))
 
+vi.mock('expo-secure-store', () => {
+  const secureStorage = new Map<string, string>()
+  return {
+    getItemAsync: vi.fn((key: string) => Promise.resolve(secureStorage.get(key) ?? null)),
+    setItemAsync: vi.fn((key: string, value: string) => {
+      secureStorage.set(key, value)
+      return Promise.resolve()
+    }),
+    deleteItemAsync: vi.fn((key: string) => {
+      secureStorage.delete(key)
+      return Promise.resolve()
+    }),
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'whenUnlockedThisDeviceOnly',
+  }
+})
+
+// Default API fetch mock: store-level unit tests run without a backend. Tests
+// that assert client behavior stub `globalThis.fetch` themselves.
+const validPreferences = {
+  userId: '11111111-2222-3333-4444-555555555555',
+  travelMood: 'nature',
+  duration: 'weekend',
+  budget: 'balanced',
+  travelParty: 'solo',
+  currency: 'USD',
+  regionCode: null,
+  onboardingCompleted: false,
+  onboardingFlowVersion: 1,
+  updatedAt: new Date().toISOString(),
+}
+
+vi.stubGlobal(
+  'fetch',
+  vi.fn(async (input: unknown) => {
+    const url = typeof input === 'string' ? input : String((input as { url?: string })?.url ?? '')
+    const body = url.includes('/preferences/complete')
+      ? { ...validPreferences, onboardingCompleted: true }
+      : url.includes('/preferences')
+        ? validPreferences
+        : { data: [], total: 0, page: 1, pageSize: 20, hasMore: false }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => body,
+    }
+  })
+)
+
 vi.mock('expo-linear-gradient', () => {
   const React = require('react')
   return {
@@ -125,3 +173,36 @@ vi.mock('@expo/vector-icons', () => {
     FontAwesome: MockIcon,
   }
 })
+
+vi.mock('react-native-svg', () => {
+  const React = require('react')
+  const createMock = (name: string) => (props: any) =>
+    React.createElement(name, props, props.children)
+  return {
+    __esModule: true,
+    default: createMock('Svg'),
+    Svg: createMock('Svg'),
+    Circle: createMock('Circle'),
+    Ellipse: createMock('Ellipse'),
+    G: createMock('G'),
+    Text: createMock('Text'),
+    TSpan: createMock('TSpan'),
+    TextPath: createMock('TextPath'),
+    Path: createMock('Path'),
+    Polygon: createMock('Polygon'),
+    Polyline: createMock('Polyline'),
+    Line: createMock('Line'),
+    Rect: createMock('Rect'),
+    Use: createMock('Use'),
+    Image: createMock('Image'),
+    Symbol: createMock('Symbol'),
+    Defs: createMock('Defs'),
+    LinearGradient: createMock('LinearGradient'),
+    RadialGradient: createMock('RadialGradient'),
+    Stop: createMock('Stop'),
+    ClipPath: createMock('ClipPath'),
+    Pattern: createMock('Pattern'),
+    Mask: createMock('Mask'),
+  }
+})
+

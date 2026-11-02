@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { View, Text, ScrollView, Pressable, LayoutAnimation, Platform, UIManager, type TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '@/components/ui'
 import { useAuthStore } from '@/store/authStore'
@@ -14,6 +15,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function SignUpScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const { signUp, loading, error, clearError } = useAuthStore()
 
   const [name, setName] = useState('')
@@ -73,14 +75,27 @@ export default function SignUpScreen() {
   }
 
   const handleBack = () => {
-    router.back()
+    if (router.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/')
+    }
   }
 
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-6 pt-5 pb-3">
-        <Pressable onPress={handleBack} accessibilityLabel="Back" className="p-2 -ml-2">
-          <Ionicons name="chevron-back" size={28} color={semanticColors.foreground} />
+      <View
+        className="px-6 pb-2 flex-row items-center justify-between"
+        style={{ paddingTop: Math.max(insets.top, 16) }}
+      >
+        <Pressable
+          onPress={handleBack}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+          hitSlop={12}
+          className="w-10 h-10 items-center justify-center -ml-2 rounded-full active:bg-muted/40"
+        >
+          <Ionicons name="arrow-back" size={24} color={semanticColors.foreground} />
         </Pressable>
       </View>
 

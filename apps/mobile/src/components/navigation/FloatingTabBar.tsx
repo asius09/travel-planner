@@ -1,14 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -19,27 +12,17 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withSpring,
-  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useTripStore } from '@/store/tripStore';
 import { semanticColors } from '@/theme/colors';
-import { typography } from '@/theme/tokens';
-import { TextMorph } from '@/components/ui/TextMorph';
 
-/** React Navigation's event emitter, as exposed on a navigation object. */
 type TabNavEmitter = (event: {
   type: string;
   target: string;
   canPreventDefault?: boolean;
 }) => { defaultPrevented?: boolean } | void;
 
-/**
- * Props this custom tab bar reads. They mirror what Expo Router passes to a
- * `tabBar` renderer: React Navigation's navigator state plus Expo Router's
- * `emitter` / `navigateToTab` helpers. Every member is optional so the
- * navigator's richer props stay assignable, and none are typed as `any`.
- */
 export interface FloatingTabBarProps {
   state?: { index: number; routes: { key: string; name: string }[] };
   descriptors?: Record<string, unknown>;
@@ -76,304 +59,228 @@ const TAB_CONFIGS: Record<string, TabConfig> = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Dock geometry
-//
-// Every gutter of the dock derives from the single DOCK_PADDING constant, so
-// the left, right, top and bottom insets always match exactly and stay
-// tightly coupled:
-//   horizontal gutter = dockWrapper paddingHorizontal
-//   vertical gutter   = (DOCK_HEIGHT - ICON_BOX) / 2 = DOCK_PADDING
-// ---------------------------------------------------------------------------
 const DOCK_PADDING = 4;
-const ICON_BOX = 36; // Indicator height / icon slot (square)
-const LABEL_GAP = 4; // 8-point grid step between icon and label
-const LABEL_WIDTH = 52; // Fixed label slot so every pill aligns identically
-const LABEL_SLIDE = 12; // How far the label travels while revealing
-const LABEL_SLOT = LABEL_GAP + LABEL_WIDTH; // Fully expanded label slot
-const DOCK_HEIGHT = ICON_BOX + DOCK_PADDING * 2;
-const DOCK_RADIUS = DOCK_HEIGHT / 2;
-const ICON_SIZE = 20;
-const INDICATOR_LIFT = -1;
+const ICON_BOX = 44;
+const DOCK_HEIGHT = ICON_BOX + DOCK_PADDING * 2; // 52px
+const DOCK_RADIUS = DOCK_HEIGHT / 2; // 26px
+const TAB_GAP = 4;
 
-// Grounded spring for the indicator slide (DESIGN.md motion: no bouncy effects).
-const SLIDE_SPRING = { duration: 420, dampingRatio: 0.85 };
-const PRESS_TIMING = { duration: 80 };
+// Inactive tab is a 44x44 square, perfectly concentric with the dock's 26px radius ends
+const INACTIVE_WIDTH = 44;
+
+// Uniform active width across all tabs for consistent padding and perfect symmetry
+const ACTIVE_WIDTH = 102;
+
+const SLIDE_SPRING = { damping: 22, stiffness: 220, mass: 0.5 };
 
 interface TabItemProps {
   config: TabConfig;
   index: number;
   progress: SharedValue<number>;
-  isFocused: boolean;
   showBadge: boolean;
   badgeLabel: string;
   onPress: () => void;
   onLongPress: () => void;
 }
 
-/**
- * One tab. Inactive tabs render their outline glyph only; the focused tab
- * reveals a TextMorph label beside the glyph. Every frame derives from the
- * same shared `progress` that drives the sliding indicator, so icon, label
- * and indicator move in lockstep. Only opacity, translation and layout width
- * are animated — nothing ever scales.
- */
 function TabItem({
   config,
   index,
   progress,
-  isFocused,
   showBadge,
   badgeLabel,
   onPress,
   onLongPress,
 }: TabItemProps) {
-  const pressOpacity = useSharedValue(1);
-  const reduceMotion = useReducedMotion();
+  const animatedTabStyle = useAnimatedStyle(() => {
+    const dist = Math.abs(progress.value - index);
+    const width = interpolate(dist, [0, 1], [ACTIVE_WIDTH, INACTIVE_WIDTH], Extrapolation.CLAMP);
+    return { width };
+  });
 
-  // Windowed ramps around this tab's index. Values clamp outside the range,
-  // so a tab only reacts while the indicator travels between its neighbours.
-  const activation = (): number => {
-    'worklet';
-    return interpolate(progress.value, [index - 1, index, index + 1], [0, 1, 0], Extrapolation.CLAMP);
-  };
+  const inactiveStyle = useAnimatedStyle(() => {
+    const dist = Math.abs(progress.value - index);
+    const opacity = interpolate(dist, [0, 0.35], [0, 1], Extrapolation.CLAMP);
+    const scale = interpolate(dist, [0, 0.35], [0.82, 1], Extrapolation.CLAMP);
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
 
-  const activeIconStyle = useAnimatedStyle(() => ({
-    opacity: activation(),
-  }));
-
-  const inactiveStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [index - 1, index, index + 1], [1, 0, 1], Extrapolation.CLAMP),
-  }));
-
-  const liftStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(
-          progress.value,
-          [index - 1, index, index + 1],
-          [0, INDICATOR_LIFT, 0],
-          Extrapolation.CLAMP
-        ),
-      },
-    ],
-  }));
-
-  // The label slot grows from 0 to its fixed width, which re-centers the
-  // whole icon + label row inside the tab and keeps both optically aligned.
-  const labelSlotStyle = useAnimatedStyle(() => ({
-    width: activation() * LABEL_SLOT,
-    opacity: activation(),
-  }));
-
-  const labelSlideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: (1 - activation()) * LABEL_SLIDE }],
-  }));
-
-  const pressStyle = useAnimatedStyle(() => ({
-    opacity: pressOpacity.value,
-  }));
+  const activeStyle = useAnimatedStyle(() => {
+    const dist = Math.abs(progress.value - index);
+    const opacity = interpolate(dist, [0, 0.35], [1, 0], Extrapolation.CLAMP);
+    const scale = interpolate(dist, [0, 0.35], [1, 0.82], Extrapolation.CLAMP);
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={isFocused ? { selected: true } : {}}
-      accessibilityLabel={config.label}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      onPressIn={() => {
-        // eslint-disable-next-line react-hooks/immutability
-        pressOpacity.value = withTiming(0.72, PRESS_TIMING);
-      }}
-      onPressOut={() => {
-        // eslint-disable-next-line react-hooks/immutability
-        pressOpacity.value = withTiming(1, PRESS_TIMING);
-      }}
-      style={styles.tabButton}
-      hitSlop={{ top: 8, bottom: 8 }}
-    >
-      <Animated.View style={[styles.tabContent, liftStyle, pressStyle]}>
-        <Animated.View style={styles.iconSlot}>
-          {/* Inactive: outline glyph + trip badge */}
-          <Animated.View style={[styles.iconLayer, inactiveStyle]}>
+    <Animated.View style={[styles.tabButton, animatedTabStyle]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={config.label}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={styles.pressableFill}
+        hitSlop={{ top: 8, bottom: 8 }}
+      >
+        {/* Inactive State: Centered Outline Icon in 44x44 target */}
+        <Animated.View style={[styles.inactiveContainer, inactiveStyle]} pointerEvents="none">
+          <View style={styles.iconContainer}>
             <Ionicons
               name={config.inactiveIcon}
-              size={ICON_SIZE}
-              color="rgba(255, 255, 255, 0.72)"
+              size={20}
+              color={semanticColors.navigationForeground}
             />
             {showBadge && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{badgeLabel}</Text>
               </View>
             )}
-          </Animated.View>
-          {/* Active: filled glyph rides the sliding accent pill */}
-          <Animated.View style={[styles.iconLayer, activeIconStyle]}>
-            <Ionicons
-              name={config.activeIcon}
-              size={ICON_SIZE}
-              color={semanticColors.accentForeground}
-            />
-          </Animated.View>
+          </View>
         </Animated.View>
 
-        {/* Label: TextMorph morphs the glyphs in with its minor scale whenever
-            this tab becomes active, and morphs them out on deactivate. */}
-        <Animated.View style={[styles.labelSlot, labelSlotStyle]}>
-          <Animated.View style={[styles.labelInner, labelSlideStyle]}>
-            <TextMorph
-              text={isFocused ? config.label : ''}
-              initial={!reduceMotion}
-              autoSize={false}
-              scatter={{ x: 0, y: 0 }}
-              textStyle={styles.labelText}
-            />
-          </Animated.View>
+        {/* Active State: Centered Icon + Label with balanced padding */}
+        <Animated.View style={[styles.activeRow, activeStyle]} pointerEvents="none">
+          <View style={styles.iconContainer}>
+            <Ionicons name={config.activeIcon} size={18} color="#FFFFFF" />
+            {showBadge && (
+              <View style={styles.badgeActive}>
+                <Text style={styles.badgeTextActive}>{badgeLabel}</Text>
+              </View>
+            )}
+          </View>
+          <Text numberOfLines={1} style={styles.activeLabel}>
+            {config.label}
+          </Text>
         </Animated.View>
-      </Animated.View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
-/**
- * Geometry for the travelling indicator at a (possibly fractional) tab
- * position. Mid-flight the pill collapses to a circle over the gap between
- * tabs, then re-expands around the incoming icon + label.
- */
-const indicatorGeometry = (position: number, tabWidth: number): { left: number; width: number } => {
-  'worklet';
-  const nearest = Math.round(position);
-  const activation = Math.max(0, Math.min(1, 1 - 2 * Math.abs(position - nearest)));
-  const width = ICON_BOX + activation * LABEL_SLOT;
-  const center = position * tabWidth + tabWidth / 2;
-  return { left: center - width / 2, width };
-};
-
-export function FloatingTabBar({ state, navigation, navigateToTab, insets }: FloatingTabBarProps) {
-  const { width } = useWindowDimensions();
+export function FloatingTabBar({
+  state,
+  navigation,
+  navigateToTab,
+  insets,
+}: FloatingTabBarProps) {
   const { destinations } = useTripStore();
   const tripCount = destinations.length;
   const reduceMotion = useReducedMotion();
 
-  const routes = state?.routes?.filter(route => route.name in TAB_CONFIGS) ?? [];
+  const routes = state?.routes?.filter(r => r.name in TAB_CONFIGS) ?? [];
   const activeIndex = state?.index ?? 0;
 
-  const dockWidth = Math.min(width - 96, 300);
-  const tabWidth = routes.length > 0 ? (dockWidth - DOCK_PADDING * 2) / routes.length : 0;
-  const bottomMargin = Math.max(insets?.bottom || 0, 14) + 6;
-
-  // A single animated value drives the whole switch choreography (indicator
-  // travel + expansion, icon crossfades, label reveal) so every layer stays
-  // in lockstep. It springs to the focused index; reduced motion snaps instead.
+  const bottomMargin = Math.max(insets?.bottom || 0, 16) + 4;
   const activeProgress = useSharedValue(activeIndex);
 
   useEffect(() => {
     if (activeProgress.value === activeIndex) return;
-    activeProgress.value = reduceMotion
-      ? activeIndex
-      : withSpring(activeIndex, SLIDE_SPRING);
+    activeProgress.value = reduceMotion ? activeIndex : withSpring(activeIndex, SLIDE_SPRING);
   }, [activeIndex, activeProgress, reduceMotion]);
 
-  // The accent pill stays centered on the travelling tab position while its
-  // width breathes between a circle (in flight) and the icon + label pill.
+  // Exact symmetrical geometry:
+  // 1 active tab (102px) + 2 inactive tabs (44px * 2) + 2 gaps (4px * 2) + dock padding (4px * 2) = 206px
+  const dockWidth =
+    routes.length * INACTIVE_WIDTH +
+    (ACTIVE_WIDTH - INACTIVE_WIDTH) +
+    (routes.length - 1) * TAB_GAP +
+    DOCK_PADDING * 2;
+
+  // Indicator positions:
+  // Tab 0 (Explore):  4px
+  // Tab 1 (Trip):     4 + 44 + 4 = 52px
+  // Tab 2 (Settings): 4 + 44 + 4 + 44 + 4 = 100px
+  const indX0 = DOCK_PADDING;
+  const indX1 = DOCK_PADDING + INACTIVE_WIDTH + TAB_GAP;
+  const indX2 = DOCK_PADDING + (INACTIVE_WIDTH + TAB_GAP) * 2;
+
   const indicatorStyle = useAnimatedStyle(() => {
-    const geometry = indicatorGeometry(activeProgress.value, tabWidth);
+    const translateX = interpolate(
+      activeProgress.value,
+      [0, 1, 2],
+      [indX0, indX1, indX2],
+      Extrapolation.CLAMP
+    );
     return {
-      width: geometry.width,
-      transform: [{ translateX: geometry.left }, { translateY: INDICATOR_LIFT }],
+      width: ACTIVE_WIDTH,
+      transform: [{ translateX }],
     };
   });
 
   if (routes.length === 0) return null;
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={[
-        styles.container,
-        {
-          bottom: bottomMargin,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.dockWrapper,
-          {
-            width: dockWidth,
-            height: DOCK_HEIGHT,
-            borderRadius: DOCK_RADIUS,
-          },
-        ]}
-      >
-        {Platform.OS === 'ios' ? (
-          <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(18, 24, 20, 0.94)' }]} />
-        )}
+    <View pointerEvents="box-none" style={[styles.container, { bottom: bottomMargin }]}>
+      <View style={[styles.dockShadowContainer, { width: dockWidth, height: DOCK_HEIGHT }]}>
+        <View style={[styles.dockWrapper, { width: dockWidth, height: DOCK_HEIGHT }]}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={85} tint="light" style={StyleSheet.absoluteFill} />
+          ) : (
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(250, 249, 246, 0.98)' }]}
+            />
+          )}
 
-        {/* Hairline top gloss border */}
-        <View style={styles.topGloss} />
-
-        {/* Tab Items Row */}
-        <View style={styles.tabsRow}>
-          {/* Shared accent indicator that glides and expands between tabs */}
+          {/* Active Gliding Pill Indicator */}
           <Animated.View pointerEvents="none" style={[styles.activeIndicator, indicatorStyle]} />
 
-          {routes.map((route, index) => {
-            const config = TAB_CONFIGS[route.name];
-            if (!config) return null;
-            const isFocused = activeIndex === index;
+          {/* Tab Touch Targets: perfectly balanced with 4px padding on all 4 sides */}
+          <View style={styles.tabsRow}>
+            {routes.map((route, index) => {
+              const config = TAB_CONFIGS[route.name];
+              if (!config) return null;
+              const isFocused = activeIndex === index;
 
-            const onPress = () => {
-              try {
-                Haptics.selectionAsync();
-              } catch {
-                // Ignore
-              }
+              const onPress = () => {
+                try {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                } catch {}
 
-              const emit = navigation?.emit;
-              const event = emit
-                ? emit({
-                    type: 'tabPress',
-                    target: route.key,
-                    canPreventDefault: true,
-                  })
-                : { defaultPrevented: false };
+                const emit = navigation?.emit;
+                const event = emit
+                  ? emit({
+                      type: 'tabPress',
+                      target: route.key,
+                      canPreventDefault: true,
+                    })
+                  : { defaultPrevented: false };
 
-              if (!isFocused && !event?.defaultPrevented) {
-                if (navigateToTab) {
-                  navigateToTab(route.key);
-                } else if (navigation?.navigate) {
-                  navigation.navigate(route.name);
+                if (!isFocused && !event?.defaultPrevented) {
+                  if (navigateToTab) {
+                    navigateToTab(route.key);
+                  } else if (navigation?.navigate) {
+                    navigation.navigate(route.name);
+                  }
                 }
-              }
-            };
+              };
 
-            const onLongPress = () => {
-              const emit = navigation?.emit;
-              emit?.({
-                type: 'tabLongPress',
-                target: route.key,
-              });
-            };
+              const onLongPress = () => {
+                navigation?.emit?.({
+                  type: 'tabLongPress',
+                  target: route.key,
+                });
+              };
 
-            const showBadge = route.name === 'trip' && tripCount > 0;
-
-            return (
-              <TabItem
-                key={route.key}
-                config={config}
-                index={index}
-                progress={activeProgress}
-                isFocused={isFocused}
-                showBadge={showBadge}
-                badgeLabel={tripCount > 9 ? '9+' : String(tripCount)}
-                onPress={onPress}
-                onLongPress={onLongPress}
-              />
-            );
-          })}
+              return (
+                <TabItem
+                  key={route.key}
+                  config={config}
+                  index={index}
+                  progress={activeProgress}
+                  showBadge={route.name === 'trip' && tripCount > 0}
+                  badgeLabel={tripCount > 9 ? '9+' : String(tripCount)}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
+                />
+              );
+            })}
+          </View>
         </View>
       </View>
     </View>
@@ -388,105 +295,134 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 50,
   },
-  dockWrapper: {
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    backgroundColor: Platform.select({
-      ios: 'rgba(20, 26, 22, 0.85)',
-      default: 'rgba(20, 26, 22, 0.95)',
-    }),
+  dockShadowContainer: {
+    borderRadius: DOCK_RADIUS,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.32,
-    shadowRadius: 16,
-    elevation: 10,
-    justifyContent: 'center',
-    // Vertical gutter comes from height = ICON_BOX + 2 * DOCK_PADDING.
-    paddingHorizontal: DOCK_PADDING,
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  topGloss: {
-    position: 'absolute',
-    top: 0,
-    left: 20,
-    right: 20,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  dockWrapper: {
+    overflow: 'hidden',
+    borderRadius: DOCK_RADIUS,
+    borderWidth: 1,
+    borderColor: 'rgba(228, 231, 233, 0.95)',
+    backgroundColor: Platform.select({
+      ios: 'rgba(255, 255, 255, 0.90)',
+      default: 'rgba(250, 249, 246, 0.98)',
+    }),
+    position: 'relative',
   },
   tabsRow: {
+    position: 'absolute',
+    top: DOCK_PADDING,
+    left: DOCK_PADDING,
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
     height: ICON_BOX,
+    gap: TAB_GAP,
   },
   activeIndicator: {
     position: 'absolute',
-    top: 0,
+    top: DOCK_PADDING,
     left: 0,
     height: ICON_BOX,
     borderRadius: ICON_BOX / 2,
-    backgroundColor: semanticColors.accent,
-    shadowColor: semanticColors.accent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    backgroundColor: semanticColors.primary,
+    shadowColor: semanticColors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
     shadowRadius: 8,
     elevation: 4,
   },
   tabButton: {
-    flex: 1,
     height: ICON_BOX,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  pressableFill: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
-  tabContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconSlot: {
-    width: ICON_BOX,
-    height: ICON_BOX,
-  },
-  iconLayer: {
+  inactiveContainer: {
     position: 'absolute',
     top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  activeRow: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  iconContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeLabel: {
+    fontFamily: 'Geist',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+    flexShrink: 0,
   },
   badge: {
     position: 'absolute',
-    top: -3,
-    right: -5,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: semanticColors.accent,
+    top: -4,
+    right: -7,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 7.5,
+    backgroundColor: semanticColors.primary,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
   },
   badgeText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 10,
-    lineHeight: 12,
-    color: semanticColors.accentForeground,
+    fontFamily: 'Geist',
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 11,
   },
-  labelSlot: {
-    height: ICON_BOX,
+  badgeActive: {
+    position: 'absolute',
+    top: -4,
+    right: -7,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 7.5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: semanticColors.primary,
+    alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    paddingLeft: LABEL_GAP,
+    paddingHorizontal: 2,
   },
-  labelInner: {
-    width: LABEL_WIDTH,
-    alignItems: 'flex-start',
-  },
-  labelText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.caption,
-    lineHeight: 14,
-    color: semanticColors.accentForeground,
+  badgeTextActive: {
+    fontFamily: 'Geist',
+    fontSize: 9,
+    fontWeight: '700',
+    color: semanticColors.primary,
+    lineHeight: 11,
   },
 });

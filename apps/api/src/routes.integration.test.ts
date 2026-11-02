@@ -452,3 +452,65 @@ describe('Trip Ownership', () => {
     expect(ownerDataAfter.items).toHaveLength(1)
   })
 })
+
+describe('Preferences Reset', () => {
+  let authToken = ''
+
+  beforeAll(async () => {
+    const res = await app.request('/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'reset-user@example.com',
+        password: 'password123',
+        name: 'Reset User',
+      }),
+    })
+    const data = (await res.json()) as any
+    authToken = data.session?.token
+  })
+
+  afterAll(async () => {
+    try {
+      await db.delete(schema.users).where(eq(schema.users.email, 'reset-user@example.com'))
+    } catch {
+      // Ignore
+    }
+  })
+
+  it('should delete saved answers and completion state', async () => {
+    await app.request('/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ travelMood: 'city', duration: 'weekend', budget: 'balanced', travelParty: 'solo' }),
+    })
+    await app.request('/preferences/complete', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+
+    const resetRes = await app.request('/preferences', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+    expect(resetRes.status).toBe(200)
+
+    const getRes = await app.request('/preferences', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+    expect(getRes.status).toBe(200)
+    expect((await getRes.json())).toBeNull()
+
+    // Completion is no longer possible until answers are saved again
+    const completeRes = await app.request('/preferences/complete', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+    expect(completeRes.status).toBe(409)
+  })
+
+  it('should require authentication to reset', async () => {
+    const res = await app.request('/preferences', { method: 'DELETE' })
+    expect(res.status).toBe(401)
+  })
+})

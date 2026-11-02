@@ -22,6 +22,7 @@ import type { Destination } from '@travel-planner/shared'
 import { formatCurrency } from '@travel-planner/shared'
 import { useTripStore } from '@/store/tripStore'
 import { semanticColors } from '@/theme/colors'
+import { SmoothDot } from './SmoothDot'
 
 interface FeaturedCarouselProps {
   destinations: Destination[]
@@ -255,7 +256,7 @@ export function FeaturedCarousel({
                     <Text className="font-sans text-[11px] text-white/70">
                       Estimated budget
                     </Text>
-                    <Text className="font-sans font-medium text-[16px] text-accent">
+                    <Text className="font-sans font-semibold text-[17px] text-white">
                       {formatCurrency(item.estimatedCostMinor, (item.costCurrency as 'USD' | 'INR') || 'USD')}
                     </Text>
                   </View>
@@ -274,31 +275,22 @@ export function FeaturedCarousel({
         })}
       </ScrollView>
 
-      {/* Pagination Indicators */}
+      {/* Pagination Indicators with smooth animated spring morphing */}
       {destinations.length > 1 && (
         <View className="flex-row items-center justify-center gap-1.5 mt-3.5">
-          {destinations.map((dest, idx) => {
-            const isActive = idx === currentIndex
-            return (
-              <Pressable
-                key={dest.id}
-                onPress={() => scrollToIndex(idx)}
-                accessibilityRole="button"
-                accessibilityLabel={`Go to slide ${idx + 1}`}
-                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                className="py-1"
-              >
-                <View
-                  style={{
-                    height: 5,
-                    width: isActive ? 22 : 6,
-                    borderRadius: 2.5,
-                    backgroundColor: isActive ? semanticColors.accent : 'rgba(120, 130, 125, 0.4)',
-                  }}
-                />
-              </Pressable>
-            )
-          })}
+          {destinations.map((dest, idx) => (
+            <SmoothDot
+              key={dest.id}
+              isActive={idx === currentIndex}
+              onPress={() => scrollToIndex(idx)}
+              label={`Go to slide ${idx + 1}`}
+              activeColor={semanticColors.foreground}
+              inactiveColor={semanticColors.muted}
+              height={5}
+              activeWidth={22}
+              inactiveWidth={6}
+            />
+          ))}
         </View>
       )}
     </View>

@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { WheelPicker, type WheelItem } from './WheelPicker'
 import { TextMorph } from './TextMorph'
 import { formatDurationLabel, daysToDurationCategory } from '@/utils/duration'
+import { semanticColors } from '@/theme/colors'
 import type { Duration } from '@travel-planner/shared'
 
 const TOTAL_DAYS = 30
@@ -93,14 +94,14 @@ export function DayRulerPicker({
     <View className="items-center justify-between w-full h-full py-2">
       {/* Top Section: Target Duration Header */}
       <View className="items-center justify-center pt-2">
-        <Text className="font-sans text-[13px] text-muted font-medium mb-1.5">
+        <Text className="font-sans text-[13px] text-muted-foreground font-medium mb-1.5">
           Target duration
         </Text>
 
         {/* Morphing Big Duration Header */}
         <View className="items-center justify-center h-[52px]">
           <TextMorph
-            className="font-sans font-medium text-[36px] text-text tracking-tight text-center leading-10"
+            className="font-sans font-medium text-[36px] text-foreground tracking-tight text-center leading-10"
             duration={75}
           >
             {displayLabel}
@@ -110,7 +111,7 @@ export function DayRulerPicker({
         {/* Morphing Contextual Descriptor */}
         <View className="items-center justify-center h-[26px] mt-1 px-4">
           <TextMorph
-            className="font-sans text-[15px] text-muted text-center"
+            className="font-sans text-[15px] text-muted-foreground text-center"
             duration={100}
           >
             {categoryDescriptor}
@@ -128,11 +129,11 @@ export function DayRulerPicker({
           accessibilityLabel="Decrease duration by one day"
           className={`w-12 h-12 rounded-full items-center justify-center border ${
             selectedDays <= 1
-              ? 'border-border/40 bg-canvas opacity-30'
+              ? 'border-border/40 bg-background opacity-30'
               : 'border-border bg-surface active:bg-border/30 shadow-xs'
           }`}
         >
-          <Ionicons name="remove" size={22} color="#202822" />
+          <Ionicons name="remove" size={22} color={semanticColors.foreground} />
         </Pressable>
 
         {/* Vertical Duration Wheel Picker */}
@@ -144,7 +145,7 @@ export function DayRulerPicker({
             orientation="vertical"
             variant="labels-only"
             itemHeight={52}
-            fadeColor="#F8F6EF"
+            fadeColor={semanticColors.background}
           />
         </View>
 
@@ -156,11 +157,11 @@ export function DayRulerPicker({
           accessibilityLabel="Increase duration by one day"
           className={`w-12 h-12 rounded-full items-center justify-center border ${
             selectedDays >= TOTAL_DAYS
-              ? 'border-border/40 bg-canvas opacity-30'
+              ? 'border-border/40 bg-background opacity-30'
               : 'border-border bg-surface active:bg-border/30 shadow-xs'
           }`}
         >
-          <Ionicons name="add" size={22} color="#202822" />
+          <Ionicons name="add" size={22} color={semanticColors.foreground} />
         </Pressable>
       </View>
 
@@ -180,11 +181,11 @@ export function DayRulerPicker({
           <Ionicons
             name="calendar-outline"
             size={16}
-            color={isFlexible ? '#FFFFFF' : '#777F78'}
+            color={isFlexible ? semanticColors.primaryForeground : semanticColors.mutedForeground}
           />
           <Text
             className={`font-sans text-[13.5px] font-medium ${
-              isFlexible ? 'text-white' : 'text-text'
+              isFlexible ? 'text-primary-foreground' : 'text-foreground'
             }`}
           >
             I'm flexible with dates

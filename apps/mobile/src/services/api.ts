@@ -10,6 +10,7 @@ import {
 } from '@travel-planner/shared'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
+import { FALLBACK_DESTINATIONS } from '@/constants/destinations'
 
 let _authTokenProvider: (() => string | undefined) | null = null
 let _unauthorizedHandler: (() => void) | null = null
@@ -286,11 +287,14 @@ export const api = {
     await assertOk(res, 'Failed to remove from trip')
   },
 
-  async reorderTrip(items: { destinationId: string; position: number }[]): Promise<void> {
+  async reorderTrip(
+    items: { destinationId: string; position: number }[],
+    tripId?: string
+  ): Promise<void> {
     const res = await safeFetch(`${API_URL}/trips/reorder`, {
       method: 'PATCH',
       headers: getHeaders(),
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, ...(tripId ? { tripId } : {}) }),
     })
     await assertOk(res, 'Failed to reorder trip items')
   },
@@ -345,5 +349,14 @@ export const api = {
       throw new Error('Received invalid preferences from the server.')
     }
     return result.data
+  },
+
+  /** Deletes the user's saved onboarding answers and completion state. */
+  async resetPreferences(): Promise<void> {
+    const res = await safeFetch(`${API_URL}/preferences`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    })
+    await assertOk(res, 'Failed to reset preferences')
   },
 }

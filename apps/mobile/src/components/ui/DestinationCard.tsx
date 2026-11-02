@@ -204,7 +204,7 @@ export function DestinationCard({
         </View>
 
         <Text
-          className="font-sans font-bold text-[22px] text-white tracking-tight leading-tight"
+          className="font-sans font-semibold text-[22px] text-white tracking-tight leading-tight"
           numberOfLines={1}
         >
           {destination.name}
@@ -213,7 +213,7 @@ export function DestinationCard({
         {/* Bottom Actions & Cost Row */}
         <View className="flex-row items-center justify-between mt-2.5 pt-2 border-t border-white/20">
           <View className="flex-row items-baseline gap-1">
-            <Text className="font-sans font-bold text-[16.5px] text-accent leading-tight">
+            <Text className="font-sans font-semibold text-[16.5px] text-white leading-tight">
               {costDisplay}
             </Text>
             <Text className="font-sans text-[11px] text-white/70">

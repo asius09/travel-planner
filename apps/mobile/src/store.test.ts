@@ -1,39 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useThemeStore, type TravelMood } from '@/store/themeStore'
 import { useOnboardingStore, getResumeStep } from '@/store/onboardingStore'
 import { useTripStore } from '@/store/tripStore'
 import { useAuthStore } from '@/store/authStore'
+import { semanticColors, primitiveColors } from '@/theme/colors'
 
-describe('Theme Store', () => {
-  it('should have default nature theme', () => {
-    const store = useThemeStore.getState()
-    expect(store.theme).toBe('nature')
-    expect(store.tokens.primary).toBe('#263F35')
-    expect(store.tokens.accent).toBe('#D7E58A')
-    expect(store.tokens.soft).toBe('#E8EBDD')
-  })
-
-  it('should change theme and update tokens', () => {
-    const store = useThemeStore.getState()
-    store.setTheme('beach')
-    const updated = useThemeStore.getState()
-    expect(updated.theme).toBe('beach')
-    expect(updated.tokens.primary).toBe('#176C70')
-    expect(updated.tokens.accent).toBe('#E3C77A')
-    expect(updated.tokens.soft).toBe('#DCEEF0')
-  })
-
-  it('should handle all four mood themes', () => {
-    const store = useThemeStore.getState()
-    const themes: TravelMood[] = ['nature', 'city', 'beach', 'adventure']
-    themes.forEach((theme) => {
-      store.setTheme(theme)
-      const updated = useThemeStore.getState()
-      expect(updated.theme).toBe(theme)
-      expect(updated.tokens.primary).toBeDefined()
-      expect(updated.tokens.accent).toBeDefined()
-      expect(updated.tokens.soft).toBeDefined()
-    })
+describe('NativeWind Design Tokens', () => {
+  it('resolves semantic tokens from single source of truth primitives', () => {
+    expect(semanticColors.primary).toBe(primitiveColors.ocean700)
+    expect(semanticColors.background).toBe(primitiveColors.ivory50)
+    expect(semanticColors.foreground).toBe(primitiveColors.ink900)
+    expect(semanticColors.secondary).toBe(primitiveColors.mist100)
+    expect(semanticColors.card).toBe(primitiveColors.white)
   })
 })
 
@@ -79,18 +56,32 @@ describe('Onboarding Store', () => {
     expect(updated.data.travelParty).toBe('couple')
   })
 
-  it('should complete onboarding', async () => {
+  it('should complete onboarding after every answer is saved', async () => {
     const store = useOnboardingStore.getState()
+    store.setMood('nature')
+    store.setDuration('weekend')
+    store.setBudget('balanced')
+    store.setTravelParty('couple')
     await store.completeOnboarding()
     const updated = useOnboardingStore.getState()
     expect(updated.data.completed).toBe(true)
     expect(updated.isComplete()).toBe(true)
   })
 
+  it('should refuse to complete onboarding while answers are missing', async () => {
+    const store = useOnboardingStore.getState()
+    store.setMood('nature')
+    store.setDuration('weekend')
+    await expect(store.completeOnboarding()).rejects.toThrow('Onboarding is incomplete')
+    expect(useOnboardingStore.getState().data.completed).toBe(false)
+  })
+
   it('should preserve answers after completion', async () => {
     const store = useOnboardingStore.getState()
     store.setMood('nature')
     store.setDuration('weekend')
+    store.setBudget('balanced')
+    store.setTravelParty('couple')
     await store.completeOnboarding()
     const updated = useOnboardingStore.getState()
     expect(updated.data.mood).toBe('nature')

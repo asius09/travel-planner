@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -23,9 +23,9 @@ import { ErrorState, ScreenFade } from '@/components/ui'
 import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
 import { useTripStore } from '@/store/tripStore'
 import { useTripSync } from '@/hooks/useTripSync'
-import { useThemeStore } from '@/store/themeStore'
 import { api } from '@/services/api'
 import { getDestinationGallery, hasCompleteGallery } from '@/services/destinationImages'
+import { FALLBACK_DESTINATIONS } from '@/constants/destinations'
 import { formatCurrency } from '@travel-planner/shared'
 import * as Haptics from 'expo-haptics'
 import { semanticColors } from '@/theme/colors'
@@ -36,16 +36,24 @@ export default function DestinationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { width: screenWidth } = useWindowDimensions()
   const { isInTrip, addDestination, removeDestination } = useTripStore()
-  const { tokens } = useThemeStore()
   const shouldReduceMotion = useReducedMotion()
   const trip = useTripSync()
 
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [failedImages, setFailedImages] = useState<Record<string, true>>({})
-  const heroScrollRef = useRef<ScrollView>(null)
+  const heroScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null)
+
+  // Reset gallery selection when navigating to a different destination.
+  // Adjusting state during render (instead of an effect) avoids cascading renders.
+  const [lastDestinationId, setLastDestinationId] = useState(id)
+  if (lastDestinationId !== id) {
+    setLastDestinationId(id)
+    setActiveImageIndex(0)
+    setFailedImages({})
+  }
 
   const {
-    data: destination,
+    data: remoteDestination,
     isLoading,
     isError,
     error,
@@ -60,17 +68,18 @@ export default function DestinationDetailScreen() {
 
   useRefreshOnFocus(refetch)
 
+  const fallbackDestination = useMemo(
+    () => FALLBACK_DESTINATIONS.find((d) => d.id === id || d.slug === id),
+    [id]
+  )
+  const destination = remoteDestination || fallbackDestination
+
   const addedToTrip = id ? isInTrip(id) : false
 
   // Ordered image collection straight from the API. Incomplete records
   // (< 5 images) are flagged for remediation and rendered with what exists.
   const gallery = destination ? getDestinationGallery(destination) : []
   const activeImage = gallery[activeImageIndex] || destination?.heroImage || ''
-
-  useEffect(() => {
-    setActiveImageIndex(0)
-    setFailedImages({})
-  }, [id])
 
   useEffect(() => {
     if (destination && !hasCompleteGallery(destination)) {
@@ -186,7 +195,7 @@ export default function DestinationDetailScreen() {
     router.back()
   }
 
-  if (isLoading) {
+  if (isLoading && !destination) {
     return (
       <View key="dest-loading" className="flex-1 bg-background">
         <View className="relative h-[380px] rounded-b-[36px] bg-border overflow-hidden" style={{ opacity: 0.5 }} />
@@ -200,7 +209,7 @@ export default function DestinationDetailScreen() {
     )
   }
 
-  if (isError || !destination) {
+  if (!destination) {
     const isNotFound = error instanceof Error && error.message === 'NOT_FOUND'
     return (
       <View key="dest-error" style={{ paddingTop: insets.top }} className="flex-1 bg-background">
@@ -249,14 +258,56 @@ export default function DestinationDetailScreen() {
           entering={shouldReduceMotion ? undefined : FadeIn.duration(280)}
           className="relative h-[410px] w-full rounded-b-[36px] overflow-hidden bg-surface-muted"
         >
-          <ExpoImage
-            key={activeImage}
-            source={{ uri: activeImage }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            transition={300}
-            cachePolicy="memory-disk"
-          />
+          {/* Swipeable image pager — synced with the thumbnail strip below */}
+          {gallery.length > 1 ? (
+            <ScrollView
+              ref={heroScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleHeroScrollEnd}
+              style={StyleSheet.absoluteFill}
+            >
+              {gallery.map((imgUrl, index) => (
+                <View
+                  key={`hero-${imgUrl}`}
+                  style={{ width: screenWidth, height: 410 }}
+                  accessibilityLabel={`${destination.name} photo ${index + 1} of ${gallery.length}`}
+                >
+                  {failedImages[imgUrl] ? (
+                    <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-surface-muted">
+                      <Ionicons name="image-outline" size={40} color={semanticColors.primary} />
+                    </View>
+                  ) : (
+                    <ExpoImage
+                      source={{ uri: imgUrl }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      transition={300}
+                      cachePolicy="memory-disk"
+                      recyclingKey={`hero-${imgUrl}`}
+                      accessibilityLabel={`${destination.name} photo ${index + 1}`}
+                      onError={() => handleImageError(imgUrl)}
+                    />
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          ) : failedImages[activeImage] ? (
+            <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-surface-muted">
+              <Ionicons name="image-outline" size={40} color={semanticColors.primary} />
+            </View>
+          ) : (
+            <ExpoImage
+              source={{ uri: activeImage }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={300}
+              cachePolicy="memory-disk"
+              accessibilityLabel={`${destination.name} photo`}
+              onError={() => handleImageError(activeImage)}
+            />
+          )}
 
           {/* Targeted top and bottom gradient masks for high contrast */}
           <LinearGradient
@@ -315,8 +366,7 @@ export default function DestinationDetailScreen() {
                 {destination.name}
               </Text>
               <Text
-                style={{ color: tokens.accent }}
-                className="font-sans font-medium text-[26px] tracking-tight"
+                className="font-sans font-medium text-[26px] text-white tracking-tight"
               >
                 {costDisplay}
               </Text>
@@ -349,7 +399,7 @@ export default function DestinationDetailScreen() {
                         height: 70,
                         borderRadius: 18,
                         borderWidth: isSelected ? 2.5 : 1,
-                        borderColor: isSelected ? tokens.primary : 'rgba(0, 0, 0, 0.08)',
+                        borderColor: isSelected ? semanticColors.primary : 'rgba(0, 0, 0, 0.08)',
                         overflow: 'hidden',
                         transform: [{ scale: isSelected ? 1.02 : 1 }],
                       }}
@@ -379,7 +429,7 @@ export default function DestinationDetailScreen() {
           <View className="flex-row gap-2.5">
             <View className="flex-1 bg-card rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
               <View className="w-7 h-7 rounded-full bg-secondary items-center justify-center">
-                <Ionicons name="time-outline" size={15} color={tokens.primary} />
+                <Ionicons name="time-outline" size={15} color={semanticColors.primary} />
               </View>
               <View className="flex-1 min-w-0">
                 <Text className="font-sans font-medium text-[12.5px] text-foreground" numberOfLines={1}>
@@ -391,7 +441,7 @@ export default function DestinationDetailScreen() {
 
             <View className="flex-1 bg-card rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
               <View className="w-7 h-7 rounded-full bg-secondary items-center justify-center">
-                <Ionicons name="compass-outline" size={15} color={tokens.primary} />
+                <Ionicons name="compass-outline" size={15} color={semanticColors.primary} />
               </View>
               <View className="flex-1 min-w-0">
                 <Text
@@ -406,7 +456,7 @@ export default function DestinationDetailScreen() {
 
             <View className="flex-1 bg-card rounded-[18px] border border-border p-2.5 flex-row items-center gap-2">
               <View className="w-7 h-7 rounded-full bg-secondary items-center justify-center">
-                <Ionicons name="star-outline" size={14} color={tokens.primary} />
+                <Ionicons name="star-outline" size={14} color={semanticColors.primary} />
               </View>
               <View className="flex-1 min-w-0">
                 <Text className="font-sans font-medium text-[12.5px] text-foreground" numberOfLines={1}>
@@ -436,12 +486,12 @@ export default function DestinationDetailScreen() {
               Highlights & attractions
             </Text>
             <View className="gap-2.5">
-              {destination.highlights.map((highlight, index) => (
+              {destination.highlights.map((highlight: string, index: number) => (
                 <View key={index} className="flex-row items-start gap-3">
                   <View
                     className="w-5 h-5 rounded-full bg-secondary items-center justify-center mt-0.5"
                   >
-                    <Ionicons name="checkmark" size={13} color={tokens.primary} />
+                    <Ionicons name="checkmark" size={13} color={semanticColors.primary} />
                   </View>
                   <Text className="font-sans text-[14px] leading-[21px] text-foreground flex-1">
                     {highlight}
@@ -455,8 +505,7 @@ export default function DestinationDetailScreen() {
           <View className="bg-card rounded-[24px] border border-border p-5 gap-2">
             <Text className="font-sans text-[12px] text-muted-foreground">Estimated budget basis</Text>
             <Text
-              style={{ color: tokens.primary }}
-              className="font-sans font-medium text-[28px] tracking-tight leading-none mt-1"
+              className="font-sans font-medium text-[28px] text-primary tracking-tight leading-none mt-1"
             >
               {costDisplay}
             </Text>
@@ -489,7 +538,7 @@ export default function DestinationDetailScreen() {
           accessibilityLabel="Share destination"
           className="w-12 h-12 rounded-full bg-card border border-border items-center justify-center active:opacity-75"
         >
-          <Ionicons name="share-outline" size={20} color={tokens.primary} />
+          <Ionicons name="share-outline" size={20} color={semanticColors.primary} />
         </Pressable>
 
         {/* Primary CTA "Add to trip" / "Saved" Pill Button */}
@@ -502,8 +551,9 @@ export default function DestinationDetailScreen() {
           }`}
         >
           <Text
-            style={{ color: addedToTrip ? tokens.primary : semanticColors.primaryForeground }}
-            className="font-sans font-medium text-[16px] tracking-tight"
+            className={`font-sans font-medium text-[16px] tracking-tight ${
+              addedToTrip ? 'text-primary' : 'text-primary-foreground'
+            }`}
           >
             {addedToTrip ? 'Saved in trip • View itinerary' : 'Add to trip'}
           </Text>

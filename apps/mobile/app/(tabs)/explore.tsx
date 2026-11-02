@@ -29,17 +29,20 @@ import {
   StickySectionHeader,
 } from '@/components/ui'
 import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
-import { useThemeStore } from '@/store/themeStore'
+import { useTripSync } from '@/hooks/useTripSync'
+import { useOnboardingStore } from '@/store/onboardingStore'
 import { useTripStore } from '@/store/tripStore'
 import { api } from '@/services/api'
+import { semanticColors } from '@/theme/colors'
 import { CATEGORY_FILTERS } from '@/constants/onboarding'
 import type { Destination } from '@travel-planner/shared'
 
 export default function ExploreScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { theme } = useThemeStore()
+  const userMood = useOnboardingStore((s) => s.data.mood) || 'nature'
   const { destinations: savedDestinations, isInTrip, addDestination } = useTripStore()
+  const trip = useTripSync()
 
   const [searchQuery, setSearchQuery] = useState('')
   type CategoryFilterValue = (typeof CATEGORY_FILTERS)[number]['value']
@@ -112,7 +115,15 @@ export default function ExploreScreen() {
   }
 
   const handleAddToTrip = (destination: Destination) => {
+    const previous = useTripStore.getState().destinations
     addDestination(destination.id, destination)
+    // Optimistic add with rollback when the server rejects the write.
+    void api
+      .addTripItem(destination.id)
+      .then(() => trip.invalidate())
+      .catch(() => {
+        useTripStore.getState().setDestinations(previous)
+      })
   }
 
   // Infinite Scroll Handler: automatically fetch next page near bottom
@@ -137,10 +148,10 @@ export default function ExploreScreen() {
   // Featured items for carousel (top 4 curated matching theme/popularity)
   const featuredDestinations = useMemo(() => {
     if (destinations.length === 0) return []
-    const moodMatches = destinations.filter((d) => d.moodTags.includes(theme))
+    const moodMatches = destinations.filter((d) => d.moodTags.includes(userMood))
     const pool = moodMatches.length >= 2 ? moodMatches : destinations
     return pool.slice(0, 4)
-  }, [destinations, theme])
+  }, [destinations, userMood])
 
   // Popular and categorized destinations
   const popularDestinations = useMemo(() => {
@@ -152,7 +163,7 @@ export default function ExploreScreen() {
   if (isLoading && destinations.length === 0) {
     return (
       <View key="explore-loading" className="flex-1 bg-background relative">
-        <ExploreHeader height={360} />
+        <ExploreHeader height={290} />
         <View style={{ paddingTop: insets.top + 104 }} className="flex-1 px-5 gap-4">
           <SearchBar
             value=""
@@ -171,7 +182,7 @@ export default function ExploreScreen() {
   if (isError && destinations.length === 0) {
     return (
       <View key="explore-error" className="flex-1 bg-background relative">
-        <ExploreHeader height={360} />
+        <ExploreHeader height={290} />
         <View style={{ paddingTop: insets.top + 104 }} className="flex-1 justify-center px-5">
           <ErrorState
             title="Could not load destinations"
@@ -187,7 +198,7 @@ export default function ExploreScreen() {
   return (
     <View key="explore-content" className="flex-1 bg-background relative">
       {/* 1. Full-Bleed Top Travel Hero Image (Extends fully to top side behind status bar) */}
-      <ExploreHeader height={360} />
+      <ExploreHeader height={290} />
 
       {/* 2. Fixed Sticky Section Header with Blur, Translate & Top-only Fade */}
       {!hasActiveFilters && (
@@ -307,9 +318,6 @@ export default function ExploreScreen() {
                     <Text className="font-sans font-semibold text-[21px] text-foreground tracking-tight">
                       Must-See Today
                     </Text>
-                    <Text className="font-sans text-xs text-muted-foreground mt-0.5">
-                      AI Curated Places
-                    </Text>
                   </View>
                   <Pressable
                     onPress={() => setSelectedFilter('all')}
@@ -337,7 +345,6 @@ export default function ExploreScreen() {
               >
                 <SectionHeader
                   title="Popular destinations"
-                  subtitle="Extraordinary places travelers love"
                 />
                 <View className="gap-4">
                   {popularDestinations.map((item) => (
@@ -359,7 +366,7 @@ export default function ExploreScreen() {
         {/* End-of-List Automatic Loading Indicator */}
         {isFetchingNextPage && (
           <View className="py-6 items-center justify-center flex-row gap-2">
-            <ActivityIndicator size="small" color="var(--primary)" />
+            <ActivityIndicator size="small" color={semanticColors.primary} />
             <Text className="font-sans text-xs text-muted-foreground">
               Discovering more places...
             </Text>

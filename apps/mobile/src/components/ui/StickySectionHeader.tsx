@@ -83,10 +83,6 @@ export function StickySectionHeader({
 
   const title =
     currentSection === 'popular' ? 'Popular destinations' : 'Must-See Today'
-  const subtitle =
-    currentSection === 'popular'
-      ? 'Extraordinary places travelers love'
-      : 'AI Curated Places'
 
   return (
     <Animated.View
@@ -111,11 +107,11 @@ export function StickySectionHeader({
         {/* Gradual Canvas Dissolution - Seamlessly dissolves to zero with no hard edge */}
         <LinearGradient
           colors={[
-            'rgba(247, 246, 240, 0.98)',
-            'rgba(247, 246, 240, 0.90)',
-            'rgba(247, 246, 240, 0.58)',
-            'rgba(247, 246, 240, 0.18)',
-            'rgba(247, 246, 240, 0)',
+            'rgba(250, 248, 245, 0.98)',
+            'rgba(250, 248, 245, 0.90)',
+            'rgba(250, 248, 245, 0.58)',
+            'rgba(250, 248, 245, 0.18)',
+            'rgba(250, 248, 245, 0)',
           ]}
           locations={[0, 0.44, 0.70, 0.88, 1.0]}
           style={StyleSheet.absoluteFill}
@@ -141,13 +137,10 @@ export function StickySectionHeader({
           className="flex-1 mr-3"
         >
           <Text
-            className="font-sans font-bold text-[17px] text-text tracking-tight"
+            className="font-sans font-semibold text-[17px] text-foreground tracking-tight"
             numberOfLines={1}
           >
             {title}
-          </Text>
-          <Text className="font-sans text-[11px] text-muted mt-0.5" numberOfLines={1}>
-            {subtitle}
           </Text>
         </Animated.View>
 
@@ -157,7 +150,7 @@ export function StickySectionHeader({
             accessibilityRole="button"
             accessibilityLabel="See all destinations"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            className="py-1 px-2.5 rounded-full bg-soft/80 active:opacity-60"
+            className="py-1 px-2.5 rounded-full bg-secondary active:opacity-60"
           >
             <Text className="font-sans font-medium text-[12px] text-primary">
               See All

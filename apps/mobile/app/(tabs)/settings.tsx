@@ -8,17 +8,16 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileAvatar, PreferenceSummary } from '@/components/ui';
-import { useThemeStore } from '@/store/themeStore';
 import { useOnboardingStore } from '@/store/onboardingStore';
 import { useAuthStore } from '@/store/authStore';
 import { useTripStore } from '@/store/tripStore';
+import { api } from '@/services/api';
 import * as Haptics from 'expo-haptics';
 import { semanticColors } from '@/theme/colors';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { tokens } = useThemeStore();
   const { resetOnboarding } = useOnboardingStore();
   const { user, signOut } = useAuthStore();
   const { clearTrip } = useTripStore();
@@ -97,7 +96,11 @@ export default function SettingsScreen() {
         {
           text: 'Clear trip',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
+            // Remove server-side first, then clear the local mirror so the
+            // trip does not reappear on the next reconciliation.
+            const destinationIds = useTripStore.getState().destinations.map(d => d.destinationId);
+            await Promise.allSettled(destinationIds.map(id => api.removeTripItem(id)));
             clearTrip();
           },
         },
@@ -117,7 +120,10 @@ export default function SettingsScreen() {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
+            // Clear the server answers too, otherwise the next launch would
+            // restore the old preferences mid-onboarding.
+            await api.resetPreferences().catch(() => {});
             resetOnboarding();
             router.replace('/onboarding/mood');
           },
@@ -130,7 +136,9 @@ export default function SettingsScreen() {
     <View style={{ paddingTop: insets.top }} className="flex-1 bg-background">
       {/* Page Header */}
       <View className="px-5 pb-2 pt-4">
-        <Text className="font-sans text-[28px] font-medium tracking-tight text-foreground">Settings</Text>
+        <Text className="font-sans text-[28px] font-medium tracking-tight text-foreground">
+          Settings
+        </Text>
       </View>
 
       <ScrollView
@@ -146,103 +154,104 @@ export default function SettingsScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open user profile and travel preferences"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#FFFFFF',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: '#E7E3DB',
-            padding: 16,
-          }}
+          className="flex-row items-center justify-between rounded-[24px] border border-border bg-card p-4"
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View className="flex-row items-center gap-2.5">
             <ProfileAvatar size="md" />
             <View>
-              <Text style={{ fontFamily: 'Geist', fontSize: 17, fontWeight: '500', color: '#252B2D' }}>
+              <Text className="font-sans text-[17px] font-medium text-card-foreground">
                 {user?.name || 'Explorer'}
               </Text>
-              <Text style={{ fontFamily: 'Geist', fontSize: 13, color: '#454B4D' }}>
+              <Text className="font-sans text-[13px] text-muted-foreground">
                 {user?.email || 'Profile & Travel Preferences'}
               </Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={16} color="#454B4D" />
         </Pressable>
 
         {/* Travel Preferences */}
         <PreferenceSummary />
 
         {/* Permissions */}
-        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <Text style={{ fontFamily: 'Geist', fontSize: 18, fontWeight: '500', color: '#252B2D' }}>Permissions</Text>
+        <View className="rounded-[24px] border border-border bg-card p-4">
+          <View className="mb-3.5 flex-row items-center justify-between">
+            <Text className="font-sans text-[18px] font-medium text-card-foreground">
+              Permissions
+            </Text>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E7E3DB', padding: 14, marginBottom: 10 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: 'Geist', fontSize: 15, fontWeight: '500', color: '#252B2D' }}>Location</Text>
+          <View className="mb-2.5 flex-row items-center justify-between rounded-[16px] border border-border bg-surface p-3.5">
+            <View className="flex-1">
+              <Text className="font-sans text-[15px] font-medium text-foreground">Location</Text>
             </View>
             <Switch
               value={locationGranted}
               onValueChange={handleToggleLocation}
-              trackColor={{ false: semanticColors.border, true: tokens.primary }}
+              trackColor={{ false: semanticColors.border, true: semanticColors.primary }}
               thumbColor={semanticColors.white}
             />
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E7E3DB', padding: 14 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: 'Geist', fontSize: 15, fontWeight: '500', color: '#252B2D' }}>Notifications</Text>
+          <View className="flex-row items-center justify-between rounded-[16px] border border-border bg-surface p-3.5">
+            <View className="flex-1">
+              <Text className="font-sans text-[15px] font-medium text-foreground">
+                Notifications
+              </Text>
             </View>
             <Switch
               value={notificationsGranted}
               onValueChange={handleToggleNotifications}
-              trackColor={{ false: semanticColors.border, true: tokens.primary }}
+              trackColor={{ false: semanticColors.border, true: semanticColors.primary }}
               thumbColor={semanticColors.white}
             />
           </View>
         </View>
 
         {/* Data & Safety */}
-        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16 }}>
-          <Text style={{ fontFamily: 'Geist', fontSize: 18, fontWeight: '500', color: '#252B2D', marginBottom: 14 }}>
+        <View className="rounded-[24px] border border-border bg-card p-4">
+          <Text className="mb-3.5 font-sans text-[18px] font-medium text-card-foreground">
             Data management
           </Text>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E7E3DB', padding: 14, marginBottom: 10 }}>
+          <Pressable
+            onPress={handleResetPreferences}
+            className="mb-2.5 flex-row items-center justify-between rounded-[16px] border border-border bg-surface p-3.5 active:opacity-70"
+          >
             <View>
-              <Text style={{ fontFamily: 'Geist', fontSize: 15, fontWeight: '500', color: tokens.primary }}>
+              <Text className="font-sans text-[15px] font-medium text-primary">
                 Reset travel preferences
               </Text>
             </View>
-            <Ionicons name="refresh-outline" size={18} color={tokens.primary} />
-          </View>
+            <Ionicons name="refresh-outline" size={18} color={semanticColors.primary} />
+          </Pressable>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E7E3DB', padding: 14, marginBottom: 10 }}>
+          <Pressable
+            onPress={handleClearTrip}
+            className="mb-2.5 flex-row items-center justify-between rounded-[16px] border border-border bg-surface p-3.5 active:opacity-70"
+          >
             <View>
-              <Text style={{ fontFamily: 'Geist', fontSize: 15, fontWeight: '500', color: '#B42318' }}>
+              <Text className="font-sans text-[15px] font-medium text-destructive">
                 Clear my trip
               </Text>
             </View>
-            <Ionicons name="trash-outline" size={18} color="#B42318" />
-          </View>
+            <Ionicons name="trash-outline" size={18} color={semanticColors.destructive} />
+          </Pressable>
 
           {user && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E7E3DB', padding: 14 }}>
+            <Pressable
+              onPress={handleSignOut}
+              className="flex-row items-center justify-between rounded-[16px] border border-border bg-surface p-3.5 active:opacity-70"
+            >
               <View>
-                <Text style={{ fontFamily: 'Geist', fontSize: 15, fontWeight: '500', color: '#B42318' }}>
-                  Sign out
-                </Text>
+                <Text className="font-sans text-[15px] font-medium text-destructive">Sign out</Text>
               </View>
-              <Ionicons name="log-out-outline" size={18} color="#B42318" />
-            </View>
+              <Ionicons name="log-out-outline" size={18} color={semanticColors.destructive} />
+            </Pressable>
           )}
         </View>
 
-        <View style={{ alignItems: 'center', marginTop: 12 }}>
-          <Text style={{ fontFamily: 'Geist', fontSize: 12, color: '#454B4D' }}>
+        <View className="mt-3 items-center">
+          <Text className="font-sans text-xs text-muted-foreground">
             Outta Travel Planner • v0.1.0
           </Text>
         </View>

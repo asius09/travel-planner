@@ -8,7 +8,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#263F35"
+      "backgroundColor": "#1A1F21"
     },
     "userInterfaceStyle": "light",
     "updates": {
@@ -24,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F8F6EF"
+        "backgroundColor": "#FAF8F5"
       },
       "package": "com.travelplanner.app",
       "permissions": [
@@ -49,7 +49,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#263F35",
+          "color": "#252B2D",
           "sounds": []
         }
       ],
@@ -60,7 +60,7 @@
           "image": "./assets/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#263F35"
+          "backgroundColor": "#252B2D"
         }
       ]
     ],

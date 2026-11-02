@@ -1,10 +1,9 @@
 'use client'
 
 import React from 'react'
-import { Pressable, Text, View, PressableProps, type GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Pressable, Text, PressableProps, type GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
-import { useThemeStore } from '@/store/themeStore'
+import { semanticColors } from '@/theme/colors'
 
 interface FilterChipProps extends PressableProps {
   label: string
@@ -23,8 +22,6 @@ export function FilterChip({
   style,
   ...props
 }: FilterChipProps) {
-  const { tokens } = useThemeStore()
-
   const handlePress = (e: GestureResponderEvent) => {
     try {
       Haptics.selectionAsync()
@@ -34,11 +31,12 @@ export function FilterChip({
     onPress?.(e)
   }
 
-  const selectedBg = tokens.primary
-  const selectedBorder = tokens.primary
-  const selectedText = tokens.primaryForeground
-  const unselectedBorder = '#E7E3DB'
-  const unselectedText = '#252B2D'
+  const selectedBg = semanticColors.primary
+  const selectedBorder = semanticColors.primary
+  const selectedText = semanticColors.primaryForeground
+  const unselectedBg = semanticColors.surface
+  const unselectedBorder = semanticColors.border
+  const unselectedText = semanticColors.mutedForeground
 
   return (
     <Pressable
@@ -48,14 +46,19 @@ export function FilterChip({
           alignItems: 'center',
           justifyContent: 'center',
           paddingVertical: 8,
-          paddingHorizontal: 14,
+          paddingHorizontal: 16,
           borderRadius: 9999,
           borderWidth: 1,
-          minWidth: 64,
+          minWidth: 68,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: selected ? 0.15 : 0.06,
+          shadowRadius: 2,
+          elevation: selected ? 2 : 1,
         },
         selected
           ? { backgroundColor: selectedBg, borderColor: selectedBorder }
-          : { backgroundColor: 'transparent', borderColor: unselectedBorder },
+          : { backgroundColor: unselectedBg, borderColor: unselectedBorder },
         style,
       ]}
       onPress={handlePress}
@@ -70,8 +73,9 @@ export function FilterChip({
         style={{
           fontFamily: 'Geist',
           fontSize: 13,
-          fontWeight: selected ? '500' : '400',
+          fontWeight: selected ? '600' : '500',
           color: selected ? selectedText : unselectedText,
+          letterSpacing: -0.2,
         }}
       >
         {label}

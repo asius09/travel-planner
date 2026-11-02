@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { OnboardingLayout } from '@/components/ui'
 import { useOnboardingStore } from '@/store/onboardingStore'
+import { semanticColors } from '@/theme/colors'
 import type { TravelParty } from '@travel-planner/shared'
 
 interface TravelPartyOption {
@@ -145,7 +146,7 @@ function CompanionCard({
           height: '100%',
           borderRadius: 24,
           overflow: 'hidden',
-          backgroundColor: 'var(--secondary)',
+          backgroundColor: semanticColors.secondary,
         }}
       >
         {/* Edge-to-edge Photography */}
@@ -196,7 +197,7 @@ function CompanionCard({
             right: 0,
             borderRadius: 24,
             borderWidth: 2.5,
-            borderColor: 'var(--primary)',
+            borderColor: semanticColors.primary,
             opacity: selectAnim,
           }}
           pointerEvents="none"
@@ -221,7 +222,7 @@ function CompanionCard({
           pointerEvents="none"
         >
           <View className="w-7 h-7 rounded-full bg-primary items-center justify-center border border-white/20 shadow-xs">
-            <Ionicons name="checkmark" size={15} color="var(--primary-foreground)" />
+            <Ionicons name="checkmark" size={15} color={semanticColors.primaryForeground} />
           </View>
         </Animated.View>
       </Pressable>

@@ -87,7 +87,7 @@ export const tripItemSchema = z.object({
 export const createTripItemSchema = tripItemSchema.omit({ id: true, addedAt: true })
 
 export const reorderTripItemsSchema = z.object({
-  tripId: z.string().uuid(),
+  tripId: z.string().uuid().optional(),
   items: z.array(
     z.object({
       destinationId: z.string().uuid(),

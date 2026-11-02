@@ -1,16 +1,18 @@
 import '@/polyfills'
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as SecureStore from 'expo-secure-store'
 import { createAuthClient } from '@neondatabase/auth'
 import type {
   TravelMood,
   Duration,
   Budget,
   TravelParty,
+  UserPreferences,
 } from '@travel-planner/shared'
 import { travelMoodSchema, durationSchema, budgetSchema, travelPartySchema } from '@travel-planner/shared'
-import { api, registerAuthTokenProvider } from '@/services/api'
+import { api, registerAuthTokenProvider, registerUnauthorizedHandler } from '@/services/api'
 
 const NEON_AUTH_BASE_URL: string =
   (process.env['EXPO_PUBLIC_NEON_AUTH_BASE_URL'] as string) ||
@@ -42,7 +44,9 @@ export interface AuthState {
   signIn: (email: string, password: string) => Promise<boolean>
   signOut: () => Promise<void>
   restoreSession: () => Promise<void>
+  clearInvalidSession: () => void
   clearError: () => void
+  applyServerPreferences: (prefs: UserPreferences | null) => void
 }
 
 // Create Neon Auth client safely
@@ -56,6 +60,36 @@ if (NEON_AUTH_BASE_URL && !NEON_AUTH_BASE_URL.includes('example.com')) {
   }
 }
 
+/**
+ * Session material must never live in ordinary AsyncStorage. The whole auth
+ * record (user + session token) is persisted through the platform secure
+ * storage (iOS Keychain / Android Keystore) instead.
+ */
+const secureStorage: StateStorage = {
+  getItem: async (name) => {
+    try {
+      return (await SecureStore.getItemAsync(name)) ?? null
+    } catch {
+      return null
+    }
+  },
+  setItem: async (name, value) => {
+    try {
+      await SecureStore.setItemAsync(name, value)
+    } catch {
+      // Persistence failure keeps the in-memory session; the user simply
+      // signs in again after a restart instead of failing silently.
+    }
+  },
+  removeItem: async (name) => {
+    try {
+      await SecureStore.deleteItemAsync(name)
+    } catch {
+      // Ignore removal failures
+    }
+  },
+}
+
 /** Safely serialize a Date (or string) to an ISO string. */
 function toISOString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value
@@ -63,16 +97,16 @@ function toISOString(value: Date | string): string {
 
 /**
  * The API stores preferences as plain strings; narrow them to the union types the
- * stores expect. Values outside the known set fall back to the current store
- * value rather than silently widening the type with a cast.
+ * stores expect. Values outside the known set are ignored rather than silently
+ * widening the type with a cast.
  */
-function narrow<T extends string | undefined, S>(
+function narrow<T extends string | null | undefined, S>(
   schema: { safeParse: (v: T) => { success: true; data: S } | { success: false } },
   value: T,
-  fallback: S,
-): S {
+): S | undefined {
+  if (value === null || value === undefined) return undefined
   const result = schema.safeParse(value)
-  return result.success ? result.data : fallback
+  return result.success ? result.data : undefined
 }
 
 /** Extracts a message from an unknown thrown value without assuming its shape. */
@@ -85,33 +119,17 @@ function errorMessage(value: unknown): string {
   return String(value)
 }
 
-async function syncUserPreferences() {
-  try {
-    const prefs = await api.getPreferences()
-    if (prefs?.travelMood) {
-      const { useOnboardingStore } = await import('./onboardingStore')
-      const { useThemeStore } = await import('./themeStore')
-      const ob = useOnboardingStore.getState()
-      const mood = narrow(travelMoodSchema, prefs.travelMood, ob.data.mood as TravelMood)
-      const duration = narrow(durationSchema, prefs.duration, ob.data.duration as Duration)
-      const budget = narrow(budgetSchema, prefs.budget, ob.data.budget as Budget)
-      const travelParty = narrow(
-        travelPartySchema,
-        prefs.travelParty,
-        ob.data.travelParty as TravelParty,
-      )
-
-      if (mood !== undefined) ob.setMood(mood)
-      if (duration !== undefined) ob.setDuration(duration)
-      if (budget !== undefined) ob.setBudget(budget)
-      if (travelParty !== undefined) ob.setTravelParty(travelParty)
-
-      useOnboardingStore.setState((s) => ({ data: { ...s.data, completed: true } }))
-      useThemeStore.getState().setTheme(mood)
-    }
-  } catch {
-    // Ignore network errors
+function toNetworkErrorMessage(message: string): string {
+  if (
+    message.includes('fetch failed') ||
+    message.includes('Network request failed') ||
+    message.includes('hostname could not be found') ||
+    message.includes('Failed to fetch') ||
+    message.includes('Unable to connect')
+  ) {
+    return 'Unable to connect to the server. Please verify your connection.'
   }
+  return message
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -127,6 +145,18 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user, session) => set({ user, session }),
 
+      applyServerPreferences: (prefs) => {
+        // Reconcile onboarding progress with the server profile.
+        void (async () => {
+          try {
+            const { useOnboardingStore } = await import('./onboardingStore')
+            useOnboardingStore.getState().applyServerState(prefs)
+          } catch {
+            // Ignore dynamic import failures
+          }
+        })()
+      },
+
       signUp: async (email: string, password: string, name?: string) => {
         set({ loading: true, error: null })
         const displayName = name?.trim() || email.split('@')[0]
@@ -139,90 +169,68 @@ export const useAuthStore = create<AuthState>()(
           // Ignore
         }
 
-        // 1. Try API signup first (or Neon Auth if configured)
         try {
-          // Try backend Hono API route first
+          // Primary path: the backend Hono API (local Better Auth session).
           try {
             const result = await api.signUp({ email, password, name: displayName })
-            if (result?.user) {
-              set({
-                user: {
-                  id: result.user.id,
-                  email: result.user.email,
-                  name: result.user.name ?? displayName,
-                  emailVerified: !!result.user.emailVerified,
-                  createdAt: toISOString(result.user.createdAt || new Date()),
-                },
-                session: result.session
-                  ? {
-                      id: result.session.id,
-                      token: result.session.token,
-                      expiresAt: toISOString(result.session.expiresAt),
-                    }
-                  : {
-                      id: crypto.randomUUID(),
-                      token: 'local-token-' + Date.now(),
-                      expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
-                    },
-                loading: false,
-              })
-              return true
+            if (!result?.user || !result?.session) {
+              throw new Error('Account created but the session could not be established. Please sign in.')
             }
+            set({
+              user: {
+                id: result.user.id,
+                email: result.user.email,
+                name: result.user.name ?? displayName,
+                emailVerified: !!result.user.emailVerified,
+                createdAt: toISOString(result.user.createdAt || new Date()),
+              },
+              session: {
+                id: result.session.id,
+                token: result.session.token,
+                expiresAt: toISOString(result.session.expiresAt),
+              },
+              loading: false,
+            })
+            return true
           } catch (apiErr: unknown) {
-            // If email already exists, immediately throw that error
             const apiMsg = errorMessage(apiErr)
             if (apiMsg.includes('already registered') || apiMsg.includes('already exists')) {
               throw apiErr
             }
-            // Otherwise, try Neon Auth client if available
+            // Fallback: the managed Neon Auth service, when configured.
             if (neonAuth) {
-              const neonResult = await neonAuth.signUp.email({
-                email,
-                password,
-                name: displayName,
-              })
-
+              const neonResult = await neonAuth.signUp.email({ email, password, name: displayName })
               if (neonResult?.error) {
                 throw new Error(neonResult.error.message)
               }
 
               const sessionResult = await neonAuth.getSession()
-              if (sessionResult?.data?.session && sessionResult?.data?.user) {
-                const s = sessionResult.data.session
-                const u = sessionResult.data.user
-                set({
-                  user: {
-                    id: u.id,
-                    email: u.email,
-                    name: u.name ?? displayName,
-                    emailVerified: !!u.emailVerified,
-                    createdAt: toISOString(u.createdAt),
-                  },
-                  session: {
-                    id: s.id,
-                    token: s.token,
-                    expiresAt: toISOString(s.expiresAt),
-                  },
-                  loading: false,
-                })
-                return true
+              if (!sessionResult?.data?.session || !sessionResult?.data?.user) {
+                throw new Error('Account created but the session could not be established. Please sign in.')
               }
+              const s = sessionResult.data.session
+              const u = sessionResult.data.user
+              set({
+                user: {
+                  id: u.id,
+                  email: u.email,
+                  name: u.name ?? displayName,
+                  emailVerified: !!u.emailVerified,
+                  createdAt: toISOString(u.createdAt),
+                },
+                session: {
+                  id: s.id,
+                  token: s.token,
+                  expiresAt: toISOString(s.expiresAt),
+                },
+                loading: false,
+              })
+              return true
             }
             throw apiErr
           }
-
-          throw new Error('Could not create account. Please try again.')
         } catch (error: unknown) {
-          let message = error instanceof Error ? error.message : 'Sign up failed'
-          if (
-            message.includes('fetch failed') ||
-            message.includes('Network request failed') ||
-            message.includes('hostname could not be found') ||
-            message.includes('Failed to fetch')
-          ) {
-            message = 'Unable to connect to the server. Please verify your connection.'
-          }
-          set({ loading: false, error: message })
+          set({ loading: false, error: toNetworkErrorMessage(errorMessage(error)) })
           return false
         }
       },
@@ -230,87 +238,74 @@ export const useAuthStore = create<AuthState>()(
       signIn: async (email: string, password: string) => {
         set({ loading: true, error: null })
         try {
-          // Try backend Hono API route first
+          // Primary path: the backend Hono API (local Better Auth session).
           try {
             const result = await api.signIn({ email, password })
-            if (result?.user) {
-              set({
-                user: {
-                  id: result.user.id,
-                  email: result.user.email,
-                  name: result.user.name ?? null,
-                  emailVerified: !!result.user.emailVerified,
-                  createdAt: toISOString(result.user.createdAt || new Date()),
-                },
-                session: result.session
-                  ? {
-                      id: result.session.id,
-                      token: result.session.token,
-                      expiresAt: toISOString(result.session.expiresAt),
-                    }
-                  : {
-                      id: crypto.randomUUID(),
-                      token: 'local-token-' + Date.now(),
-                      expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
-                    },
-                loading: false,
-              })
-              return true
+            if (!result?.user || !result?.session) {
+              throw new Error('Invalid email or password')
             }
+            set({
+              user: {
+                id: result.user.id,
+                email: result.user.email,
+                name: result.user.name ?? null,
+                emailVerified: !!result.user.emailVerified,
+                createdAt: toISOString(result.user.createdAt || new Date()),
+              },
+              session: {
+                id: result.session.id,
+                token: result.session.token,
+                expiresAt: toISOString(result.session.expiresAt),
+              },
+              loading: false,
+            })
+            // Reconcile onboarding progress from the server before routing so
+            // an existing user resumes (or skips) onboarding correctly.
+            const prefs = await api.getPreferences().catch(() => null)
+            get().applyServerPreferences(prefs)
+            return true
           } catch (apiErr: unknown) {
             const apiMsg = errorMessage(apiErr)
             if (apiMsg.includes('Invalid email or password') || apiMsg.includes('INVALID_CREDENTIALS')) {
               throw apiErr
             }
-            // Try Neon Auth client if available
+            // Fallback: the managed Neon Auth service, when configured.
             if (neonAuth) {
-              const neonResult = await neonAuth.signIn.email({
-                email,
-                password,
-              })
-
+              const neonResult = await neonAuth.signIn.email({ email, password })
               if (neonResult?.error) {
                 throw new Error(neonResult.error.message)
               }
 
               const sessionResult = await neonAuth.getSession()
-              if (sessionResult?.data?.session && sessionResult?.data?.user) {
-                const s = sessionResult.data.session
-                const u = sessionResult.data.user
-                set({
-                  user: {
-                    id: u.id,
-                    email: u.email,
-                    name: u.name ?? null,
-                    emailVerified: !!u.emailVerified,
-                    createdAt: toISOString(u.createdAt),
-                  },
-                  session: {
-                    id: s.id,
-                    token: s.token,
-                    expiresAt: toISOString(s.expiresAt),
-                  },
-                  loading: false,
-                })
-                await syncUserPreferences()
-                return true
+              if (!sessionResult?.data?.session || !sessionResult?.data?.user) {
+                throw new Error('Invalid email or password')
               }
+              const s = sessionResult.data.session
+              const u = sessionResult.data.user
+              set({
+                user: {
+                  id: u.id,
+                  email: u.email,
+                  name: u.name ?? null,
+                  emailVerified: !!u.emailVerified,
+                  createdAt: toISOString(u.createdAt),
+                },
+                session: {
+                  id: s.id,
+                  token: s.token,
+                  expiresAt: toISOString(s.expiresAt),
+                },
+                loading: false,
+              })
+              // Reconcile onboarding progress from the server before routing.
+              const prefs = await api.getPreferences().catch(() => null)
+              get().applyServerPreferences(prefs)
+              return true
             }
             throw apiErr
           }
-
-          throw new Error('Sign in failed')
         } catch (error: unknown) {
-          let message = error instanceof Error ? error.message : 'Sign in failed'
-          if (
-            message.includes('fetch failed') ||
-            message.includes('Network request failed') ||
-            message.includes('hostname could not be found') ||
-            message.includes('Failed to fetch')
-          ) {
-            message = 'Unable to connect to the server. Please verify your connection.'
-          }
-          set({ loading: false, error: message })
+          set({ loading: false, error: toNetworkErrorMessage(errorMessage(error)) })
           return false
         }
       },
@@ -335,6 +330,12 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      /** Clears credentials the server has rejected so the guard routes to login. */
+      clearInvalidSession: () => {
+        if (!get().user && !get().session) return
+        set({ user: null, session: null, error: null })
+      },
+
       restoreSession: async () => {
         // Immediately mark initialized so app launch is never blocked by network calls
         set({ isInitialized: true })
@@ -345,8 +346,13 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          // Verify session in background
-          const remoteSession = await api.getSession().catch(() => null)
+          // Verify the cached session in the background.
+          // - a resolved response with user: session is still valid
+          // - a resolved response without user: the server rejected it -> clear
+          // - a thrown error (network): keep the cached session for offline use
+          const remoteSession = await api.getSession()
+          if (remoteSession === null) return
+
           if (remoteSession?.user) {
             set({
               user: {
@@ -364,7 +370,10 @@ export const useAuthStore = create<AuthState>()(
                   }
                 : session,
             })
-            await syncUserPreferences()
+            const prefs = await api.getPreferences().catch(() => null)
+            get().applyServerPreferences(prefs)
+          } else {
+            get().clearInvalidSession()
           }
         } catch {
           // Keep cached session on network failure
@@ -375,7 +384,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'travel-planner-auth',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => secureStorage),
       partialize: (state) => ({ user: state.user, session: state.session }),
       onRehydrateStorage: () => (state) => {
         state?.setInitialized(true)
@@ -386,3 +395,7 @@ export const useAuthStore = create<AuthState>()(
 
 // Break require cycle between api.ts and authStore.ts
 registerAuthTokenProvider(() => useAuthStore.getState().session?.token)
+
+// Expired sessions detected anywhere in the API client clear local credentials
+// so the navigation guard can route the user to login without a loop.
+registerUnauthorizedHandler(() => useAuthStore.getState().clearInvalidSession())

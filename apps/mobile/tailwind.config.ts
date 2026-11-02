@@ -14,52 +14,55 @@ const config: Config = {
     extend: {
       colors: {
         /* 
-         * Semantic color tokens - base values matching Nature mood (default).
+         * Semantic color tokens - clean luxury editorial travel palette.
          * Mood-specific overrides are applied at runtime via theme store.
          */
-        background: '#F6F4EF',      // ivory-50
-        foreground: '#252B2D',      // ink-900
+        background: '#FAF8F5',      // ivory-50 (luminous porcelain)
+        foreground: '#1A1F21',      // ink-900 (obsidian ink)
 
         surface: '#FFFFFF',         // white-0
         'surface-elevated': '#FFFFFF',
-        'surface-muted': '#DCE5E7', // mist-100
+        'surface-muted': '#EEF4F6', // mist-100 (clean seafoam wash)
 
-        // Nature mood defaults (default theme)
-        primary: '#263F35',         // nature primary - deep forest
+        // Approved editorial theme defaults: deep ink, fresh mist, and vibrant azure ocean
+        primary: '#1A1F21',         // ink-900
         'primary-foreground': '#FFFFFF',
 
-        secondary: '#E8EBDD',       // nature soft - moss wash
-        'secondary-foreground': '#252B2D',
+        secondary: '#EEF4F6',       // mist-100
+        'secondary-foreground': '#1A1F21',
 
-        accent: '#D7E58A',          // nature accent - vivid lime/sage
-        'accent-foreground': '#252B2D',
+        accent: '#3586A9',          // ocean-500 (Riviera azure)
+        'accent-foreground': '#1A1F21',
 
-        muted: '#E7E3DB',           // stone-200
-        'muted-foreground': '#454B4D', // ink-700
+        muted: '#EBE7DF',           // stone-200 (warm platinum sand)
+        'muted-foreground': '#50575B', // ink-700 (clean graphite)
 
         card: '#FFFFFF',
-        'card-foreground': '#252B2D',
+        'card-foreground': '#1A1F21',
 
         popover: '#FFFFFF',
-        'popover-foreground': '#252B2D',
+        'popover-foreground': '#1A1F21',
 
-        border: '#E7E3DB',          // stone-200
-        input: '#E7E3DB',
-        ring: '#456779',            // ocean-700
+        border: '#EBE7DF',          // stone-200
+        input: '#EBE7DF',
+        ring: '#21627E',            // ocean-700 (deep marine)
 
-        success: '#286749',
+        success: '#1C6946',
         'success-foreground': '#FFFFFF',
-        warning: '#795000',
+        warning: '#8A5800',
         'warning-foreground': '#FFFFFF',
-        destructive: '#B42318',
+        destructive: '#B8241B',
         'destructive-foreground': '#FFFFFF',
 
         'navigation-background': '#FFFFFF',
-        'navigation-foreground': '#454B4D',
-        'navigation-active': '#456779',
+        'navigation-foreground': '#50575B',
+        'navigation-active': '#21627E',
 
-        skeleton: '#E7E3DB',
-        'focus-ring': '#456779',
+        skeleton: '#EBE7DF',
+        'focus-ring': '#21627E',
+
+        overlay: '#1A1F2180',
+        'image-overlay': '#1A1F2199',
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],

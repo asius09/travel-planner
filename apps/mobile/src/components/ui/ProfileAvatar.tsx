@@ -1,28 +1,33 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { Image as ExpoImage } from 'expo-image'
-import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons } from '@expo/vector-icons'
-import { useAuthStore } from '@/store/authStore'
-import { useThemeStore } from '@/store/themeStore'
-import { avatarGradients } from '@/theme/tokens'
+import React from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '@/store/authStore';
+import { semanticColors } from '@/theme/colors';
 
 interface ProfileAvatarProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  imageUrl?: string | null
-  onPress?: () => void
-  showEditBadge?: boolean
-  className?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  imageUrl?: string | null;
+  onPress?: () => void;
+  showEditBadge?: boolean;
+  className?: string;
 }
 
 const SIZES = {
-  sm: { dimension: 36, badge: 12, icon: 14 },
-  md: { dimension: 44, badge: 14, icon: 18 },
-  lg: { dimension: 68, badge: 20, icon: 26 },
-  xl: { dimension: 88, badge: 24, icon: 32 },
-}
+  sm: { dimension: 36, badge: 13, icon: 16, fontSize: 14 },
+  md: { dimension: 44, badge: 15, icon: 20, fontSize: 17 },
+  lg: { dimension: 68, badge: 22, icon: 30, fontSize: 26 },
+  xl: { dimension: 88, badge: 26, icon: 38, fontSize: 34 },
+};
+
+/**
+ * Brand gradient colors derived strictly from global.css semantic tokens:
+ * --accent (#0284C7) to --primary (#026AA7)
+ */
+const BRAND_AVATAR_GRADIENT = [semanticColors.accent, semanticColors.primary] as const;
 
 export function ProfileAvatar({
   size = 'md',
@@ -31,13 +36,10 @@ export function ProfileAvatar({
   showEditBadge = false,
   className = '',
 }: ProfileAvatarProps) {
-  const { user } = useAuthStore()
-  const { theme } = useThemeStore()
-  const { dimension, badge: badgeSize } = SIZES[size]
+  const { user } = useAuthStore();
+  const { dimension, badge: badgeSize, icon: iconSize, fontSize } = SIZES[size];
 
-  // Theme-derived multi-stop smooth gradient
-  const gradientColors = avatarGradients[theme] || avatarGradients.nature
-  const initial = (user?.name?.trim()?.[0] || user?.email?.trim()?.[0] || 'A').toUpperCase()
+  const initial = (user?.name?.trim()?.[0] || user?.email?.trim()?.[0] || '').toUpperCase();
 
   const avatarContent = (
     <View
@@ -45,103 +47,101 @@ export function ProfileAvatar({
         width: dimension,
         height: dimension,
         borderRadius: dimension / 2,
-        overflow: 'hidden',
         borderWidth: size === 'sm' ? 1.5 : 2,
-        borderColor: 'rgba(255, 255, 255, 0.4)',
-        backgroundColor: 'var(--primary)',
+        borderColor: 'rgba(255, 255, 255, 0.75)',
+        backgroundColor: semanticColors.primary,
+        shadowColor: semanticColors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 3,
       }}
-      className="items-center justify-center relative"
+      className="relative items-center justify-center"
     >
-      {imageUrl ? (
-        <ExpoImage
-          source={{ uri: imageUrl }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-        />
-      ) : (
-        /* Smooth Theme-Derived Gradient with Fluid Organic Layers */
-        <View style={StyleSheet.absoluteFill} className="items-center justify-center">
-          {/* Base diagonal wash */}
-          <LinearGradient
-            colors={[gradientColors[0], gradientColors[1], gradientColors[2]]}
-            start={{ x: 0.1, y: 0.1 }}
-            end={{ x: 0.9, y: 0.9 }}
+      {/* Clip inner content to circular radius */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            borderRadius: dimension / 2,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        ]}
+      >
+        {imageUrl ? (
+          <ExpoImage
+            source={{ uri: imageUrl }}
             style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={200}
           />
+        ) : (
+          <>
+            {/* Luminous Brand Diagonal Gradient */}
+            <LinearGradient
+              colors={BRAND_AVATAR_GRADIENT}
+              start={{ x: 0.1, y: 0.05 }}
+              end={{ x: 0.9, y: 0.95 }}
+              style={StyleSheet.absoluteFill}
+            />
 
-          {/* Secondary ambient highlight orb */}
-          <View
-            style={{
-              position: 'absolute',
-              top: -dimension * 0.2,
-              left: -dimension * 0.1,
-              width: dimension * 0.8,
-              height: dimension * 0.8,
-              borderRadius: dimension * 0.4,
-              backgroundColor: 'rgba(255, 255, 255, 0.32)',
-            }}
-          />
+            {/* Subtle frosted glass specular highlight */}
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.28)', 'rgba(255, 255, 255, 0.0)']}
+              start={{ x: 0.2, y: 0.1 }}
+              end={{ x: 0.8, y: 0.9 }}
+              style={StyleSheet.absoluteFill}
+            />
 
-          {/* Tertiary deep contrast crescent */}
-          <View
-            style={{
-              position: 'absolute',
-              bottom: -dimension * 0.25,
-              right: -dimension * 0.2,
-              width: dimension * 0.85,
-              height: dimension * 0.85,
-              borderRadius: dimension * 0.425,
-              backgroundColor: 'rgba(0, 0, 0, 0.38)',
-            }}
-          />
-
-          {/* Delicate glassy surface sheen */}
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.45)', 'transparent', 'rgba(0, 0, 0, 0.25)']}
-            start={{ x: 0.3, y: 0 }}
-            end={{ x: 0.7, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-
-          {/* Centered Single Initial */}
-          <Text
-            style={{
-              fontSize: dimension * 0.44,
-              fontFamily: 'Geist-Medium',
-              color: '#FFFFFF',
-              textAlign: 'center',
-              includeFontPadding: false,
-              textShadowColor: 'rgba(0, 0, 0, 0.35)',
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 3,
-            }}
-          >
-            {initial}
-          </Text>
-        </View>
-      )}
+            {/* Clean Monogram or Silhouette Icon */}
+            {initial ? (
+              <Text
+                style={{
+                  fontSize,
+                  fontFamily: 'Geist',
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  letterSpacing: -0.3,
+                  includeFontPadding: false,
+                }}
+              >
+                {initial}
+              </Text>
+            ) : (
+              <Ionicons name="person" size={iconSize} color="#FFFFFF" />
+            )}
+          </>
+        )}
+      </View>
 
       {/* Optional Edit Badge */}
       {showEditBadge && (
         <View
           style={{
             position: 'absolute',
-            bottom: 0,
-            right: 0,
+            bottom: -1,
+            right: -1,
             width: badgeSize,
             height: badgeSize,
             borderRadius: badgeSize / 2,
-            backgroundColor: 'var(--accent)',
+            backgroundColor: semanticColors.primary,
             borderWidth: 1.5,
             borderColor: '#FFFFFF',
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.16,
+            shadowRadius: 2,
+            elevation: 2,
           }}
-          className="items-center justify-center shadow-xs"
+          className="items-center justify-center"
         >
-          <Ionicons name="pencil" size={badgeSize * 0.6} color="var(--primary)" />
+          <Ionicons name="camera" size={badgeSize * 0.55} color="#FFFFFF" />
         </View>
       )}
     </View>
-  )
+  );
 
   if (onPress) {
     return (
@@ -154,8 +154,8 @@ export function ProfileAvatar({
       >
         {avatarContent}
       </Pressable>
-    )
+    );
   }
 
-  return <View className={className}>{avatarContent}</View>
+  return <View className={className}>{avatarContent}</View>;
 }

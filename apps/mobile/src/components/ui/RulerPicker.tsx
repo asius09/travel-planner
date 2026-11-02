@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { LinearGradient } from 'expo-linear-gradient'
+import { semanticColors } from '@/theme/colors'
 
 export interface RulerPickerProps {
   /** Minimum selectable numeric value (default 1) */
@@ -55,11 +56,11 @@ function getBarHeight(distance: number): number {
  */
 function getBarColor(distance: number, indicatorColor: string): string {
   if (distance === 0) return indicatorColor
-  if (distance === 1) return '#8D968F'
-  if (distance === 2) return '#ADB5AF'
-  if (distance === 3) return '#CAD1CC'
-  if (distance === 4) return '#DFE3E0'
-  return '#E5E9E6'
+  if (distance === 1) return 'rgba(37, 43, 45, 0.55)'
+  if (distance === 2) return 'rgba(37, 43, 45, 0.40)'
+  if (distance === 3) return 'rgba(37, 43, 45, 0.28)'
+  if (distance === 4) return 'rgba(37, 43, 45, 0.18)'
+  return 'rgba(37, 43, 45, 0.12)'
 }
 
 export function RulerPicker({
@@ -69,8 +70,8 @@ export function RulerPicker({
   value,
   onValueChange,
   tickSpacing = 18,
-  indicatorColor = '#263F35',
-  fadeColor = '#F8F6EF',
+  indicatorColor = semanticColors.primary,
+  fadeColor = semanticColors.background,
   disabled = false,
   className = '',
   style,

@@ -16,6 +16,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import { semanticColors } from '@/theme/colors'
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -97,7 +98,7 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
       editable = true,
       onFocus,
       onBlur,
-      placeholderTextColor = 'var(--muted-foreground)',
+      placeholderTextColor = semanticColors.mutedForeground,
       ...props
     },
     ref
@@ -157,7 +158,7 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
       >
         {label ? (
           <Text
-            className={`font-medium text-sm text-text mb-1.5 ${labelClassName || ''}`}
+            className={`font-medium text-sm text-foreground mb-1.5 ${labelClassName || ''}`}
             style={labelStyle}
           >
             {label}
@@ -186,10 +187,10 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
           <TextInput
             ref={ref}
             placeholderTextColor={placeholderTextColor}
-            selectionColor="var(--ring)"
-            cursorColor="var(--ring)"
+            selectionColor={semanticColors.ring}
+            cursorColor={semanticColors.ring}
             className={[
-              'flex-1 h-full font-sans text-[15px] text-text',
+              'flex-1 h-full font-sans text-[15px] text-foreground',
               leftIcon ? 'pl-11' : 'pl-4',
               rightIcon ? 'pr-11' : 'pr-4',
               inputClassName,
@@ -224,7 +225,7 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
           <Animated.View style={{ opacity: hasError ? errorOpacity : 1 }}>
             <View className="flex-row items-center gap-1.5 mt-1.5 ml-0.5">
               {hasError ? (
-                <Ionicons name="alert-circle" size={14} color="var(--destructive)" />
+                <Ionicons name="alert-circle" size={14} color={semanticColors.destructive} />
               ) : null}
               <Text
                 className={`font-sans text-[13px] leading-[18px] ${

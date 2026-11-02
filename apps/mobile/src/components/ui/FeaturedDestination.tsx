@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { formatCurrency } from '@travel-planner/shared'
 import { useTripStore } from '@/store/tripStore'
-import { useThemeStore } from '@/store/themeStore'
 import * as Haptics from 'expo-haptics'
 import type { Destination } from '@travel-planner/shared'
 import { semanticColors } from '@/theme/colors'
@@ -24,7 +23,6 @@ export function FeaturedDestination({
   className = '',
 }: FeaturedDestinationProps) {
   const { isInTrip, addDestination, removeDestination } = useTripStore()
-  const { tokens } = useThemeStore()
   const isSaved = isInTrip(destination.id)
 
   const handleToggleSave = (e: GestureResponderEvent) => {

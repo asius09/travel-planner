@@ -28,7 +28,7 @@ export function OnboardingOption({
   return (
     <Pressable
       className={`flex-row items-center p-4 rounded-2xl border-2 gap-3.5 min-h-[64px] overflow-hidden ${
-        selected ? 'border-primary bg-soft' : 'border-border bg-surface'
+        selected ? 'border-primary bg-secondary' : 'border-border bg-surface'
       } ${className}`}
       onPress={onPress}
       disabled={disabled}

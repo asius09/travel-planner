@@ -214,6 +214,58 @@ preferencesRoutes.openapi(
   updatePreferencesHandler
 )
 
+// Reset preferences (deletes the saved onboarding answers)
+preferencesRoutes.openapi(
+  createRoute({
+    method: 'delete',
+    path: '/preferences',
+    summary: "Delete the user's saved onboarding answers and completion state",
+    security: authSecurity,
+    responses: {
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      200: {
+        description: 'Preferences deleted',
+        content: {
+          'application/json': {
+            schema: z.object({ success: z.boolean() }),
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+    tags: ['Preferences'],
+  }),
+  async (c) => {
+    const user = c.get('user')
+
+    if (!user) {
+      return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
+    }
+
+    try {
+      await db.delete(userPreferences).where(eq(userPreferences.userId, user.id))
+      return c.json({ success: true }, 200)
+    } catch (error) {
+      console.error('Preferences reset error:', error)
+      return c.json({ error: 'Failed to reset preferences', code: 'RESET_FAILED' }, 500)
+    }
+  }
+)
+
 // Complete onboarding
 preferencesRoutes.openapi(
   createRoute({

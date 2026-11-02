@@ -1,120 +1,82 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  /* Primitive palette */
-  --color-ivory-50: #F6F4EF;
-  --color-white-0: #FFFFFF;
+@layer base {
+  :root {
+    /* Primitive palette - Minimal, clean, luxury editorial travel palette */
+    --color-ivory-50: #FAF9F6;
+    --color-white-0: #FFFFFF;
 
-  /* Ink Scale */
-  --color-ink-900: #252B2D;
-  --color-ink-700: #454B4D;
+    /* Deep Carbon Ink Scale (Clean, crisp, rich charcoal - never harsh or muddy) */
+    --color-ink-900: #1A1D1E;
+    --color-ink-700: #555E62;
 
-  /* Ocean Scale */
-  --color-ocean-700: #456779;
-  --color-ocean-500: #64869A;
+    /* Clean Sky & Ocean Scale (Luminous, fresh alpine lake and open sky blues - no metallic/grey undertone) */
+    --color-ocean-700: #026AA7;
+    --color-ocean-500: #0284C7;
 
-  /* Muted / Surface */
-  --color-mist-100: #DCE5E7;
-  --color-stone-200: #E7E3DB;
-  --color-muted-500: #777D7D;
+    /* Clean Muted & Surface Washes (Airy sky mist and crisp hairline dividers) */
+    --color-mist-100: #EBF5FB;
+    --color-stone-200: #E4E7E9;
+    --color-muted-500: #6C757D;
 
-  /* Status primitives */
-  --color-success-700: #286749;
-  --color-warning-800: #795000;
-  --color-danger-700: #B42318;
+    /* Status primitives */
+    --color-success-700: #19633F;
+    --color-warning-800: #875200;
+    --color-danger-700: #B32118;
+
+    /* Semantic tokens */
+    --background: var(--color-ivory-50);
+    --foreground: var(--color-ink-900);
+
+    --surface: var(--color-white-0);
+    --surface-elevated: var(--color-white-0);
+    --surface-muted: var(--color-mist-100);
+
+    --muted: var(--color-stone-200);
+    --muted-foreground: var(--color-ink-700);
+
+    --primary: var(--color-ocean-700);
+    --primary-foreground: var(--color-white-0);
+
+    --secondary: var(--color-mist-100);
+    --secondary-foreground: var(--color-ink-900);
+
+    --accent: var(--color-ocean-500);
+    --accent-foreground: var(--color-white-0);
+
+    --card: var(--color-white-0);
+    --card-foreground: var(--color-ink-900);
+
+    --popover: var(--color-white-0);
+    --popover-foreground: var(--color-ink-900);
+
+    --overlay: #1A1D1E80;
+    --image-overlay: #1A1D1E99;
+
+    --border: var(--color-stone-200);
+    --input: var(--color-stone-200);
+    --ring: var(--color-ocean-700);
+
+    --success: var(--color-success-700);
+    --success-foreground: var(--color-white-0);
+    --warning: var(--color-warning-800);
+    --warning-foreground: var(--color-white-0);
+    --destructive: var(--color-danger-700);
+    --destructive-foreground: var(--color-white-0);
+
+    --navigation-background: var(--color-white-0);
+    --navigation-foreground: var(--color-ink-700);
+    --navigation-active: var(--color-ocean-700);
+
+    --skeleton: var(--color-stone-200);
+    --focus-ring: var(--color-ocean-700);
+  }
 }
 
-:root {
-  color-scheme: light;
-
-  /* Semantic tokens */
-  --background: var(--color-ivory-50);
-  --foreground: var(--color-ink-900);
-
-  --surface: var(--color-white-0);
-  --surface-elevated: var(--color-white-0);
-  --surface-muted: var(--color-mist-100);
-
-  --muted: var(--color-stone-200);
-  --muted-foreground: var(--color-ink-700);
-
-  --primary: #263F35;
-  --primary-foreground: #FFFFFF;
-
-  --secondary: #E8EBDD;
-  --secondary-foreground: #252B2D;
-
-  --accent: #D7E58A;
-  --accent-foreground: #252B2D;
-
-  --card: var(--color-white-0);
-  --card-foreground: var(--color-ink-900);
-
-  --popover: var(--color-white-0);
-  --popover-foreground: var(--color-ink-900);
-
-  --border: var(--color-stone-200);
-  --input: var(--color-stone-200);
-  --ring: var(--color-ocean-700);
-
-  --success: var(--color-success-700);
-  --success-foreground: #FFFFFF;
-  --warning: var(--color-warning-800);
-  --warning-foreground: #FFFFFF;
-  --destructive: var(--color-danger-700);
-  --destructive-foreground: #FFFFFF;
-
-  --navigation-background: var(--color-white-0);
-  --navigation-foreground: var(--color-ink-700);
-  --navigation-active: var(--color-ocean-700);
-
-  --skeleton: var(--color-stone-200);
-  --focus-ring: var(--color-ocean-700);
-}
-
-/* NativeWind theme mapping */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-surface-elevated: var(--surface-elevated);
-  --color-surface-muted: var(--surface-muted);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-navigation-background: var(--navigation-background);
-  --color-navigation-foreground: var(--navigation-foreground);
-  --color-navigation-active: var(--navigation-active);
-  --color-skeleton: var(--skeleton);
-  --color-focus-ring: var(--focus-ring);
-
-  --font-family-sans: Geist, system-ui, sans-serif;
-
-  --radius-card: 1.125rem;
-  --radius-input: 1rem;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-family-sans);
-  -webkit-font-smoothing: antialiased;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
