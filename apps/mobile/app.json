@@ -5,14 +5,10 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1A1F21"
-    },
     "userInterfaceStyle": "light",
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/703795f0-a66d-494e-b954-3b060c21bc11"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -67,6 +63,20 @@
     "scheme": "travelplanner",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "703795f0-a66d-494e-b954-3b060c21bc11"
+      }
+    },
+    "owner": "asius.in",
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

@@ -1,0 +1,31 @@
+# fly.toml app configuration file generated for travel-planner-muddy-mountain-5298 on 2026-11-02T13:09:15+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'travel-planner-muddy-mountain-5298'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'apps/api/Dockerfile'
+
+[deploy]
+
+[env]
+  API_PORT = '3001'
+  NODE_ENV = 'production'
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+
+  [[http_service.checks]]
+    interval = '10s'
+    timeout = '2s'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512'
